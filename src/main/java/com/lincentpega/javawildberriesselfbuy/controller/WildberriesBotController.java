@@ -39,7 +39,7 @@ public class WildberriesBotController extends AbilityBot {
                 .action(ctx -> {
                     String userId = ctx.user().getId().toString();
                     if (!sessions.containsKey(userId))
-                        sessions.put(userId, new ChromeSession(userId, ChromeOptionsConfig.createChromeOptions()));
+                        sessions.put(userId, new ChromeSession(userId, ParameterizedChromeOptions.getChromeOptions()));
                     sessions.get(userId).openWebsite();
                 })
                 .post(ctx -> silent.send("Session created successfully", ctx.chatId()))
