@@ -1,4 +1,4 @@
-package com.lincentpega.javawildberriesselfbuy;
+package com.lincentpega.javawildberriesselfbuy.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -8,4 +8,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class TelegramConfigProperties {
     private String botToken;
     private String botUsername;
+    private long creatorId;
 }
