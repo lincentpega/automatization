@@ -5,18 +5,23 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+@Component
+@Scope("prototype")
 public class ChromeSession {
-    private final String userId;
     private final WebDriver driver;
     private final LocalDateTime creationDateTime;
 
-    public ChromeSession(String userId, ChromeOptions chromeOptions) {
-        this.userId = userId;
-        this.driver = new ChromeDriver(chromeOptions);
+    @Autowired
+    public ChromeSession(@Qualifier("parameterizedChromeOptions") ChromeOptions chromeOptions) {
         this.creationDateTime = LocalDateTime.now();
+        this.driver = new ChromeDriver(chromeOptions);
     }
 
     public void close() {
@@ -39,10 +44,6 @@ public class ChromeSession {
         WebElement submitButton = numberInputFormBlock.findElement(
                 By.cssSelector("button#requestCode"));
         submitButton.click();
-    }
-
-    public String getUserId() {
-        return userId;
     }
 
     public String getCreationDateTime() {

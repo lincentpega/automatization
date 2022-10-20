@@ -1,9 +1,10 @@
 package com.lincentpega.javawildberriesselfbuy.controller;
 
-import com.lincentpega.javawildberriesselfbuy.config.ChromeOptionsConfig;
 import com.lincentpega.javawildberriesselfbuy.config.TelegramConfigProperties;
 import com.lincentpega.javawildberriesselfbuy.service.ChromeSession;
-import org.springframework.stereotype.Controller;
+
+import org.springframework.beans.factory.annotation.Lookup;
+import org.springframework.stereotype.Component;
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.objects.Ability;
 
@@ -12,21 +13,16 @@ import java.util.HashMap;
 import static org.telegram.abilitybots.api.objects.Locality.USER;
 import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
 
-@Controller
+@Component
 public class WildberriesBotController extends AbilityBot {
     private final long creatorId;
+    private final HashMap<String, ChromeSession> idSessionHashMap;
 
-    private final HashMap<String, ChromeSession> sessions;
 
     public WildberriesBotController(TelegramConfigProperties telegramConfig) {
         super(telegramConfig.getBotToken(), telegramConfig.getBotUsername());
         this.creatorId = telegramConfig.getCreatorId();
-        this.sessions = new HashMap<>();
-    }
-
-    @Override
-    public long creatorId() {
-        return creatorId;
+        this.idSessionHashMap = new HashMap<>();
     }
 
     public Ability createWildberriesSession() {
@@ -38,9 +34,9 @@ public class WildberriesBotController extends AbilityBot {
                 .privacy(PUBLIC)
                 .action(ctx -> {
                     String userId = ctx.user().getId().toString();
-                    if (!sessions.containsKey(userId))
-                        sessions.put(userId, new ChromeSession(userId, ParameterizedChromeOptions.getChromeOptions()));
-                    sessions.get(userId).openWebsite();
+                    if (!idSessionHashMap.containsKey(userId))
+                        idSessionHashMap.put(userId, getChromeSession());
+                    idSessionHashMap.get(userId).openWebsite();
                 })
                 .post(ctx -> silent.send("Session created successfully", ctx.chatId()))
                 .build();
@@ -55,20 +51,44 @@ public class WildberriesBotController extends AbilityBot {
                 .privacy(PUBLIC)
                 .action(ctx -> {
                     String userId = ctx.user().getId().toString();
-                    sessions.get(userId).close();
-                    sessions.remove(userId);
+                    if (idSessionHashMap.containsKey(userId)) {
+                        idSessionHashMap.get(userId).close();
+                        idSessionHashMap.remove(userId);
+                        silent.send("Session closed successfully", ctx.chatId());
+                    } else {
+                        silent.send("Session has already been closed or didn't exist", ctx.chatId());
+                    }
                 })
-                .post(ctx -> silent.send("Session closed successfully", ctx.chatId()))
                 .build();
     }
 
-//    public Ability showState() {
-//        return Ability
-//                .builder()
-//                .name("state")
-//                .info("prints state of session")
-//                .locality(USER)
-//                .privacy(PUBLIC)
-//                .
-//    }
+    public Ability showState() {
+        return Ability
+                .builder()
+                .name("state")
+                .info("shows state of a session")
+                .locality(USER)
+                .privacy(PUBLIC)
+                .action(ctx -> {
+                    String userId = ctx.user().getId().toString();
+                    if (idSessionHashMap.containsKey(userId)) {
+                        String creationDateTime = idSessionHashMap.get(userId).getCreationDateTime();
+                        silent.send("Session exists and was created on " + creationDateTime, ctx.chatId());
+                    }
+                    else {
+                        silent.send("Session doesn't exist", ctx.chatId());
+                    }
+                })
+                .build();
+    }
+
+    @Override
+    public long creatorId() {
+        return creatorId;
+    }
+
+    @Lookup
+    public ChromeSession getChromeSession() {
+        return null;
+    }
 }

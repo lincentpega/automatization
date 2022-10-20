@@ -1,6 +1,5 @@
 package com.lincentpega.javawildberriesselfbuy;
 
-import com.lincentpega.javawildberriesselfbuy.config.ChromeOptionsConfig;
 import com.lincentpega.javawildberriesselfbuy.config.TelegramConfigProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
