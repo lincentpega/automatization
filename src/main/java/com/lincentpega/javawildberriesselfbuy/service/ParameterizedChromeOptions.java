@@ -1,4 +1,4 @@
-package com.lincentpega.javawildberriesselfbuy.controller;
+package com.lincentpega.javawildberriesselfbuy.service;
 
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +11,7 @@ public class ParameterizedChromeOptions extends ChromeOptions {
     @Value("${chromedriver.isheadless}")
     private boolean isHeadless;
 
-    private ParameterizedChromeOptions() {
+    public ParameterizedChromeOptions() {
         super();
         this.addArguments("user-agent=" + userAgent);
         if (isHeadless) this.addArguments("--headless");
