@@ -7,7 +7,6 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -21,13 +20,15 @@ import java.time.LocalDateTime;
 @Scope("prototype")
 @Log4j2
 public class ChromeSession {
-    SessionState state;
+    private SessionState state;
     private final WebDriver driver;
     private final LocalDateTime creationDateTime;
 
 
     @Autowired
-    public ChromeSession(@Qualifier("parameterizedChromeOptions") ChromeOptions chromeOptions) {
+    public ChromeSession(ChromeOptions chromeOptions) {
+        ParameterizedChromeOptions parameterizedChromeOptions = (ParameterizedChromeOptions) chromeOptions;
+        log.info(parameterizedChromeOptions.toString());
         this.creationDateTime = LocalDateTime.now();
         this.driver = new ChromeDriver(chromeOptions);
         this.state = SessionState.SESSION_STARTED;
@@ -70,17 +71,6 @@ public class ChromeSession {
         }
     }
 
-    public boolean isCaptchaAppeared(){
-        Assert.state(state == SessionState.NUMBER_ENTERED,
-                "Expected " + SessionState.NUMBER_ENTERED + " state, got "+ state + " state");
-        try {
-            driver.findElement(By.cssSelector("div.login__captcha.form-block.form-block--captcha"));
-            return true;
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
     public void takeScreenshot(String userId) {
         File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
         try {
@@ -113,51 +103,7 @@ public class ChromeSession {
         }
     }
 
-    public boolean isCaptchaCodeWrong() {
-        Assert.state(state == SessionState.CAPTCHA_APPEARED, "Expected "
-                + SessionState.CAPTCHA_APPEARED + " state, got "+ state + " state");
-
-        try {
-            WebElement errorMessageBlock = driver.findElement(
-                    By.cssSelector("#spaAuthForm > div > div.login__captcha.form-block.form-block--captcha > p"));
-            String errorMessage = errorMessageBlock.getText().trim();
-            return errorMessage.contains("Код указан неверно");
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
-    public boolean isCodeRequested() {
-        Assert.state(state == SessionState.CAPTCHA_APPEARED || state == SessionState.NUMBER_ENTERED,
-                "Expected " + SessionState.CAPTCHA_APPEARED + " or "
-                        +  SessionState.NUMBER_ENTERED + " states, got "+ state + " state");
-
-        try {
-            WebElement loginCodeTitleBlock = driver.findElement(
-                    By.cssSelector("#spaAuthForm > div > div.login__code-head > h2"));
-            String loginCodeTitle = loginCodeTitleBlock.getText().trim();
-            return loginCodeTitle.contains("Введите код");
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
-    public boolean isPushUpSent() {
-        Assert.state(state == SessionState.CAPTCHA_APPEARED || state == SessionState.NUMBER_ENTERED,
-                "Expected " + SessionState.CAPTCHA_APPEARED + " or "
-                        +  SessionState.NUMBER_ENTERED + " states, got "+ state + " state");
-        try {
-            WebElement codeMessageBlock = driver.findElement(
-                    By.cssSelector("#spaAuthForm > div > div.login__code-head > p"));
-            String codeMessage = codeMessageBlock.getText().trim();
-
-            return codeMessage.contains("уже выполнен вход");
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
-    public void enterCode(String code) throws NoSuchElementException{
+    public void enterCode(String code) throws NoSuchElementException {
         Assert.state(state == SessionState.SMS_REQUESTED || state == SessionState.PUSH_UP_REQUESTED,
                 "Expected " + SessionState.SMS_REQUESTED + " or " + SessionState.PUSH_UP_REQUESTED
                         + " states, got "+ state + " state");
@@ -173,9 +119,11 @@ public class ChromeSession {
                 By.cssSelector("input.j-input-confirm-code.val-msg")
         );
         codeInputField.sendKeys(code);
+
+        state = SessionState.AUTHENTICATED;
     }
 
-    public void requestCodeAsSMS() throws NoSuchElementException {
+    private void requestCodeAsSMS() throws NoSuchElementException {
         Assert.state(state == SessionState.PUSH_UP_REQUESTED,
                 "Expected " + SessionState.SMS_REQUESTED + " state, got "+ state + " state");
 
@@ -185,6 +133,61 @@ public class ChromeSession {
             state = SessionState.CAPTCHA_APPEARED;
         } else {
             state = SessionState.SMS_REQUESTED;
+        }
+    }
+
+    private boolean isCaptchaCodeWrong() {
+        Assert.state(state == SessionState.CAPTCHA_APPEARED, "Expected "
+                + SessionState.CAPTCHA_APPEARED + " state, got "+ state + " state");
+
+        try {
+            WebElement errorMessageBlock = driver.findElement(
+                    By.cssSelector("#spaAuthForm > div > div.login__captcha.form-block.form-block--captcha > p"));
+            String errorMessage = errorMessageBlock.getText().trim();
+            return errorMessage.contains("Код указан неверно");
+        } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    private boolean isCodeRequested() {
+        Assert.state(state == SessionState.CAPTCHA_APPEARED || state == SessionState.NUMBER_ENTERED,
+                "Expected " + SessionState.CAPTCHA_APPEARED + " or "
+                        +  SessionState.NUMBER_ENTERED + " states, got "+ state + " state");
+
+        try {
+            WebElement loginCodeTitleBlock = driver.findElement(
+                    By.cssSelector("#spaAuthForm > div > div.login__code-head > h2"));
+            String loginCodeTitle = loginCodeTitleBlock.getText().trim();
+            return loginCodeTitle.contains("Введите код");
+        } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    private boolean isPushUpSent() {
+        Assert.state(state == SessionState.CAPTCHA_APPEARED || state == SessionState.NUMBER_ENTERED,
+                "Expected " + SessionState.CAPTCHA_APPEARED + " or "
+                        +  SessionState.NUMBER_ENTERED + " states, got "+ state + " state");
+        try {
+            WebElement codeMessageBlock = driver.findElement(
+                    By.cssSelector("#spaAuthForm > div > div.login__code-head > p"));
+            String codeMessage = codeMessageBlock.getText().trim();
+
+            return codeMessage.contains("уже выполнен вход");
+        } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    private boolean isCaptchaAppeared(){
+        Assert.state(state == SessionState.NUMBER_ENTERED,
+                "Expected " + SessionState.NUMBER_ENTERED + " state, got "+ state + " state");
+        try {
+            driver.findElement(By.cssSelector("div.login__captcha.form-block.form-block--captcha"));
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
         }
     }
 

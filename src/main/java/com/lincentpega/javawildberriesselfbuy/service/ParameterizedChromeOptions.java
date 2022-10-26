@@ -1,20 +1,21 @@
 package com.lincentpega.javawildberriesselfbuy.service;
 
+import lombok.extern.log4j.Log4j2;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-@Component
+@Log4j2
+@Component("parameterizedChromeOptions")
 public class ParameterizedChromeOptions extends ChromeOptions {
-    @Value("${chromedriver.user-agent}")
-    private String userAgent;
-    @Value("${chromedriver.isheadless}")
-    private boolean isHeadless;
+    private final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36";
+    private final boolean isHeadless = false;
 
     public ParameterizedChromeOptions() {
         super();
-        this.addArguments("user-agent=" + userAgent);
+        this.addArguments(userAgent);
         if (isHeadless) this.addArguments("--headless");
-        this.addArguments("--disable-gpu");
+        this.addArguments("--disable-gpu", "--window-size=1920,1200", "--ignore-certificate-errors",
+                "--disable-extensions", "--no-sandbox", "--disable-dev-shm-usage");
     }
 }

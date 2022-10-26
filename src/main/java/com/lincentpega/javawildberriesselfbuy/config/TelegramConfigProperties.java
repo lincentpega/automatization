@@ -1,12 +1,16 @@
 package com.lincentpega.javawildberriesselfbuy.config;
 
+import lombok.AccessLevel;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import lombok.experimental.FieldDefaults;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+@Component
 @Data
-@ConfigurationProperties(prefix = "telegram")
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class TelegramConfigProperties {
-    private String botPath;
-    private String botUsername;
-    private String botToken;
+    @Value("${telegram.bot-path}") String botPath;
+    @Value("${telegram.bot-username}") String botUsername;
+    @Value("${telegram.bot-token}") String botToken;
 }
