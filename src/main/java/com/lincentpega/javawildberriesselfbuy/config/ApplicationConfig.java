@@ -14,6 +14,4 @@ public class ApplicationConfig {
     public SetWebhook setWebhook() {
         return SetWebhook.builder().url(telegramConfigProperties.getBotPath()).build();
     }
-
-
 }
