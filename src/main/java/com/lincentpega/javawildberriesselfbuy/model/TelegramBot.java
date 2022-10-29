@@ -3,6 +3,8 @@ package com.lincentpega.javawildberriesselfbuy.model;
 import com.lincentpega.javawildberriesselfbuy.config.TelegramConfigProperties;
 
 import com.lincentpega.javawildberriesselfbuy.constants.BotMessageEnum;
+import com.lincentpega.javawildberriesselfbuy.exceptions.IllegalInputException;
+import com.lincentpega.javawildberriesselfbuy.exceptions.TelegramFileUploadException;
 import com.lincentpega.javawildberriesselfbuy.model.handler.MessageHandler;
 import lombok.extern.log4j.Log4j2;
 
@@ -13,6 +15,8 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updates.SetWebhook;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.starter.SpringWebhookBot;
+
+import java.io.IOException;
 
 @Log4j2
 @Component
@@ -36,7 +40,7 @@ public class TelegramBot extends SpringWebhookBot{
     public BotApiMethod<?> onWebhookUpdateReceived(Update update) {
         try {
             return handleUpdate(update);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalInputException e) {
             return new SendMessage(update.getMessage().getChatId().toString(),
                     e.getMessage());
         } catch (Exception e) {
@@ -46,11 +50,11 @@ public class TelegramBot extends SpringWebhookBot{
         }
     }
 
-    private BotApiMethod<?> handleUpdate(Update update) throws IllegalArgumentException{
+    private BotApiMethod<?> handleUpdate(Update update) throws IllegalInputException {
         if (update.hasMessage()) {
             return messageHandler.handleUpdate(update);
         } else {
-            throw new IllegalArgumentException("Неверный тип сообщения");
+            throw new IllegalInputException("Неверный тип сообщения");
         }
     }
 

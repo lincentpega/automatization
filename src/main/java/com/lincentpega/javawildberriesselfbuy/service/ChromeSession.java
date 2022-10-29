@@ -2,18 +2,19 @@ package com.lincentpega.javawildberriesselfbuy.service;
 
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.Level;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 
 @Component
@@ -27,11 +28,11 @@ public class ChromeSession {
 
     @Autowired
     public ChromeSession(ChromeOptions chromeOptions) {
-        ParameterizedChromeOptions parameterizedChromeOptions = (ParameterizedChromeOptions) chromeOptions;
-        log.info(parameterizedChromeOptions.toString());
         this.creationDateTime = LocalDateTime.now();
-        this.driver = new ChromeDriver(chromeOptions);
         this.state = SessionState.SESSION_STARTED;
+        this.driver = new ChromeDriver(chromeOptions);
+
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(1));
     }
 
     public void close() {
@@ -40,17 +41,12 @@ public class ChromeSession {
     }
 
     public void openWebsite() {
-        Assert.state(state == SessionState.SESSION_STARTED,
-                "Expected " + SessionState.SESSION_STARTED + " state, got "+ state + " state");
-
         String authLink = "https://www.wildberries.ru/security/login";
         driver.get(authLink);
         state = SessionState.SITE_ENTERED;
     }
 
-    public void enterNumber(String number) throws NoSuchElementException{
-        Assert.state(state == SessionState.SITE_ENTERED,
-                "Expected "  + SessionState.SITE_ENTERED + " state, got "+ state + " state");
+    public void enterNumber(String number) {
 
         WebElement numberInputFormBlock = driver.findElement(By.cssSelector("form#spaAuthForm"));
         WebElement numberInputField = numberInputFormBlock.findElement(By.cssSelector("input.input-item"));
@@ -60,6 +56,8 @@ public class ChromeSession {
         submitButton.click();
 
         state = SessionState.NUMBER_ENTERED;
+
+        new WebDriverWait(driver, Duration.ofSeconds(3)).until(driver -> isCaptchaAppeared() || isCodeRequested());
 
         if (isCaptchaAppeared()) {
             state = SessionState.CAPTCHA_APPEARED;
@@ -74,16 +72,13 @@ public class ChromeSession {
     public void takeScreenshot(String userId) {
         File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
         try {
-            FileUtils.copyFile(screenshot, new File("screenshot" + userId + ".png"));
+            FileUtils.copyFile(screenshot, new File("src/main/resources/screenshot" + userId + ".png"));
         } catch (IOException e) {
-            log.log(Level.WARN, "Unable to save screenshot: " + e);
+            log.warn("Unable to save screenshot: " + e);
         }
     }
 
-    public void enterCaptcha(String captchaCode) throws NoSuchElementException{
-        Assert.state(state == SessionState.CAPTCHA_APPEARED,
-                "Expected " + SessionState.CAPTCHA_APPEARED + " state, got "+ state + " state");
-
+    public void enterCaptcha(String captchaCode) {
         WebElement captchaInputField = driver.findElement(By.cssSelector("#smsCaptchaCode"));
         captchaInputField.sendKeys(captchaCode);
 
@@ -91,7 +86,16 @@ public class ChromeSession {
                 By.cssSelector("#spaAuthForm > div > div.login__captcha.form-block.form-block--captcha > button"));
         button.click();
 
-        if (isCaptchaCodeWrong())
+        try {
+            TimeUnit.SECONDS.sleep(2);
+        } catch (InterruptedException e) {
+            log.warn(e);
+        }
+
+        new WebDriverWait(driver, Duration.ofSeconds(3)).until(driver -> isCaptchaCodeWrong() || isCodeRequested());
+
+
+        if (isCaptchaAppeared())
             state = SessionState.CAPTCHA_CODE_WRONG;
         if (isCodeRequested()) {
             if (isPushUpSent()) {
@@ -103,10 +107,12 @@ public class ChromeSession {
         }
     }
 
-    public void enterCode(String code) throws NoSuchElementException {
-        Assert.state(state == SessionState.SMS_REQUESTED || state == SessionState.PUSH_UP_REQUESTED,
-                "Expected " + SessionState.SMS_REQUESTED + " or " + SessionState.PUSH_UP_REQUESTED
-                        + " states, got "+ state + " state");
+    public void enterCode(String code) {
+        try {
+            TimeUnit.SECONDS.sleep(60);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         if (state == SessionState.PUSH_UP_REQUESTED) {
             requestCodeAsSMS();
@@ -123,10 +129,7 @@ public class ChromeSession {
         state = SessionState.AUTHENTICATED;
     }
 
-    private void requestCodeAsSMS() throws NoSuchElementException {
-        Assert.state(state == SessionState.PUSH_UP_REQUESTED,
-                "Expected " + SessionState.SMS_REQUESTED + " state, got "+ state + " state");
-
+    private void requestCodeAsSMS() {
         WebElement requestSMSButton = driver.findElement(By.cssSelector("#requestCode"));
         requestSMSButton.click();
         if (isCaptchaAppeared()) {
@@ -137,9 +140,6 @@ public class ChromeSession {
     }
 
     private boolean isCaptchaCodeWrong() {
-        Assert.state(state == SessionState.CAPTCHA_APPEARED, "Expected "
-                + SessionState.CAPTCHA_APPEARED + " state, got "+ state + " state");
-
         try {
             WebElement errorMessageBlock = driver.findElement(
                     By.cssSelector("#spaAuthForm > div > div.login__captcha.form-block.form-block--captcha > p"));
@@ -151,24 +151,16 @@ public class ChromeSession {
     }
 
     private boolean isCodeRequested() {
-        Assert.state(state == SessionState.CAPTCHA_APPEARED || state == SessionState.NUMBER_ENTERED,
-                "Expected " + SessionState.CAPTCHA_APPEARED + " or "
-                        +  SessionState.NUMBER_ENTERED + " states, got "+ state + " state");
-
         try {
             WebElement loginCodeTitleBlock = driver.findElement(
-                    By.cssSelector("#spaAuthForm > div > div.login__code-head > h2"));
-            String loginCodeTitle = loginCodeTitleBlock.getText().trim();
-            return loginCodeTitle.contains("Введите код");
+                    By.cssSelector("#spaAuthForm > div > div.login__code.form-block > div > input")); // #spaAuthForm > div > div.login__code.form-block > div > input
+            return true;
         } catch (NoSuchElementException e) {
             return false;
         }
     }
 
     private boolean isPushUpSent() {
-        Assert.state(state == SessionState.CAPTCHA_APPEARED || state == SessionState.NUMBER_ENTERED,
-                "Expected " + SessionState.CAPTCHA_APPEARED + " or "
-                        +  SessionState.NUMBER_ENTERED + " states, got "+ state + " state");
         try {
             WebElement codeMessageBlock = driver.findElement(
                     By.cssSelector("#spaAuthForm > div > div.login__code-head > p"));
@@ -181,8 +173,6 @@ public class ChromeSession {
     }
 
     private boolean isCaptchaAppeared(){
-        Assert.state(state == SessionState.NUMBER_ENTERED,
-                "Expected " + SessionState.NUMBER_ENTERED + " state, got "+ state + " state");
         try {
             driver.findElement(By.cssSelector("div.login__captcha.form-block.form-block--captcha"));
             return true;
