@@ -5,7 +5,6 @@ import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -150,10 +149,6 @@ public class ChromeSession {
     private void updateState() {
         switch (state) {
             case NUMBER_ENTERED:
-
-//                new WebDriverWait(driver, Duration.ofSeconds(3))
-//                        .until(driver -> isCaptchaAppeared() || isCodeSent() || isPushUpSent());
-
                 try {
                     TimeUnit.SECONDS.sleep(3);
                 } catch (InterruptedException e) {

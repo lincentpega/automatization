@@ -1,7 +1,6 @@
 package com.lincentpega.javawildberriesselfbuy.controller;
 
 import com.lincentpega.javawildberriesselfbuy.exceptions.TelegramFileUploadException;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
@@ -45,5 +44,4 @@ public class TelegramApiClient {
             throw new TelegramFileUploadException();
         }
     }
-
 }

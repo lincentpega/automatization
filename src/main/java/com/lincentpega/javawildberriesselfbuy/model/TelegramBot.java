@@ -4,7 +4,6 @@ import com.lincentpega.javawildberriesselfbuy.config.TelegramConfigProperties;
 
 import com.lincentpega.javawildberriesselfbuy.constants.BotMessageEnum;
 import com.lincentpega.javawildberriesselfbuy.exceptions.IllegalInputException;
-import com.lincentpega.javawildberriesselfbuy.exceptions.TelegramFileUploadException;
 import com.lincentpega.javawildberriesselfbuy.model.handler.MessageHandler;
 import lombok.extern.log4j.Log4j2;
 
@@ -16,7 +15,6 @@ import org.telegram.telegrambots.meta.api.methods.updates.SetWebhook;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.starter.SpringWebhookBot;
 
-import java.io.IOException;
 
 @Log4j2
 @Component
