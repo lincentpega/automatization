@@ -1,0 +1,17 @@
+package com.lincentpega.javawildberriesselfbuy.service;
+
+public enum SessionState {
+    SESSION_STARTED,
+    SITE_ENTERED,
+    NUMBER_ENTERED,
+    CAPTCHA_ENTERED,
+    SMS_CODE_ENTERED,
+    CAPTCHA_APPEARED,
+    CAPTCHA_CODE_WRONG,
+    PUSH_UP_REQUESTED,
+    REQUESTED_CODE_AS_SMS,
+    SMS_REQUESTED,
+    WRONG_CODE_ENTERED,
+    AUTHENTICATED,
+    SESSION_CLOSED
+}
