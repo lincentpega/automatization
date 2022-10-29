@@ -56,26 +56,11 @@ public class ChromeSession {
         submitButton.click();
 
         state = SessionState.NUMBER_ENTERED;
-
-        new WebDriverWait(driver, Duration.ofSeconds(3)).until(driver -> isCaptchaAppeared() || isCodeRequested());
-
-        if (isCaptchaAppeared()) {
-            state = SessionState.CAPTCHA_APPEARED;
-        } else if (isCodeRequested()) {
-            if (isPushUpSent())
-                state = SessionState.PUSH_UP_REQUESTED;
-            else
-                state = SessionState.SMS_REQUESTED;
-        }
     }
 
-    public void takeScreenshot(String userId) {
+    public void takeScreenshot(String userId) throws IOException {
         File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-        try {
-            FileUtils.copyFile(screenshot, new File("src/main/resources/screenshot" + userId + ".png"));
-        } catch (IOException e) {
-            log.warn("Unable to save screenshot: " + e);
-        }
+        FileUtils.copyFile(screenshot, new File("src/main/resources/screenshots/screenshot" + userId + ".png"));
     }
 
     public void enterCaptcha(String captchaCode) {
@@ -86,38 +71,10 @@ public class ChromeSession {
                 By.cssSelector("#spaAuthForm > div > div.login__captcha.form-block.form-block--captcha > button"));
         button.click();
 
-        try {
-            TimeUnit.SECONDS.sleep(2);
-        } catch (InterruptedException e) {
-            log.warn(e);
-        }
-
-        new WebDriverWait(driver, Duration.ofSeconds(3)).until(driver -> isCaptchaCodeWrong() || isCodeRequested());
-
-
-        if (isCaptchaAppeared())
-            state = SessionState.CAPTCHA_CODE_WRONG;
-        if (isCodeRequested()) {
-            if (isPushUpSent()) {
-                state = SessionState.PUSH_UP_REQUESTED;
-            }
-            else {
-                state = SessionState.SMS_REQUESTED;
-            }
-        }
+        state = SessionState.CAPTCHA_ENTERED;
     }
 
     public void enterCode(String code) {
-        try {
-            TimeUnit.SECONDS.sleep(60);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        if (state == SessionState.PUSH_UP_REQUESTED) {
-            requestCodeAsSMS();
-        }
-
         WebElement codeInputFormBlock = driver.findElement(
                 By.cssSelector("form#spaAuthForm")
         );
@@ -126,38 +83,29 @@ public class ChromeSession {
         );
         codeInputField.sendKeys(code);
 
-        state = SessionState.AUTHENTICATED;
+        state = SessionState.SMS_CODE_ENTERED;
     }
 
-    private void requestCodeAsSMS() {
+    public String getCreationDateTime() {
+        return creationDateTime.toString();
+    }
+
+    public SessionState getUpdatedState() {
+        updateState();
+        return state;
+    }
+
+    public void requestCodeAsSMS() {
+        try {
+            TimeUnit.SECONDS.sleep(60);
+        } catch (InterruptedException e) {
+            log.warn(e);
+        }
+
         WebElement requestSMSButton = driver.findElement(By.cssSelector("#requestCode"));
         requestSMSButton.click();
-        if (isCaptchaAppeared()) {
-            state = SessionState.CAPTCHA_APPEARED;
-        } else {
-            state = SessionState.SMS_REQUESTED;
-        }
-    }
 
-    private boolean isCaptchaCodeWrong() {
-        try {
-            WebElement errorMessageBlock = driver.findElement(
-                    By.cssSelector("#spaAuthForm > div > div.login__captcha.form-block.form-block--captcha > p"));
-            String errorMessage = errorMessageBlock.getText().trim();
-            return errorMessage.contains("Код указан неверно");
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
-    private boolean isCodeRequested() {
-        try {
-            WebElement loginCodeTitleBlock = driver.findElement(
-                    By.cssSelector("#spaAuthForm > div > div.login__code.form-block > div > input")); // #spaAuthForm > div > div.login__code.form-block > div > input
-            return true;
-        } catch (NoSuchElementException e) {
-            return false;
-        }
+        state = SessionState.REQUESTED_CODE_AS_SMS;
     }
 
     private boolean isPushUpSent() {
@@ -172,20 +120,87 @@ public class ChromeSession {
         }
     }
 
-    private boolean isCaptchaAppeared(){
+    private boolean isCaptchaAppeared() {
         try {
-            driver.findElement(By.cssSelector("div.login__captcha.form-block.form-block--captcha"));
+            driver.findElement(By.cssSelector("#smsCaptchaCode"));
             return true;
         } catch (NoSuchElementException e) {
             return false;
         }
     }
 
-    public String getCreationDateTime() {
-        return creationDateTime.toString();
+    private boolean isCodeWrong() {
+        try {
+            driver.findElement(By.cssSelector("#spaAuthForm > div > div.login__code.form-block > p:nth-child(7)"));
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
+        }
     }
 
-    public SessionState getState() {
-        return state;
+    private boolean isCodeSent() {
+        try {
+            driver.findElement(By.cssSelector("#spaAuthForm > div > div.login__code.form-block > div > input")); // FIXME: проверить на индивадуальность селектора
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    private void updateState() {
+        switch (state) {
+            case NUMBER_ENTERED:
+
+//                new WebDriverWait(driver, Duration.ofSeconds(3))
+//                        .until(driver -> isCaptchaAppeared() || isCodeSent() || isPushUpSent());
+
+                try {
+                    TimeUnit.SECONDS.sleep(3);
+                } catch (InterruptedException e) {
+                    log.warn(e);
+                }
+
+                if (isCaptchaAppeared()) {
+                    state = SessionState.CAPTCHA_APPEARED;
+                } else if (isPushUpSent()) {
+                    state = SessionState.PUSH_UP_REQUESTED;
+                } else  {
+                    state = SessionState.SMS_REQUESTED;
+                }
+                break;
+
+            case CAPTCHA_ENTERED:
+
+                try {
+                    TimeUnit.SECONDS.sleep(3);
+                } catch (InterruptedException e) {
+                    log.warn(e);
+                }
+
+                if (isCaptchaAppeared()) {
+                    state = SessionState.CAPTCHA_CODE_WRONG;
+                } else if (isPushUpSent()) {
+                    state = SessionState.PUSH_UP_REQUESTED;
+                } else if (isCodeSent()) {
+                    state = SessionState.SMS_REQUESTED;
+                }
+                break;
+
+            case REQUESTED_CODE_AS_SMS: //FIXME: капча может появляться после запроса кода через смс, обработать случай
+                if (isCaptchaAppeared()) {
+                    state = SessionState.CAPTCHA_APPEARED;
+                } else {
+                    state = SessionState.SMS_REQUESTED;
+                }
+                break;
+
+            case SMS_CODE_ENTERED:
+
+                if (isCodeWrong()) {
+                    state = SessionState.WRONG_CODE_ENTERED;
+                } else {
+                    state = SessionState.AUTHENTICATED;
+                }
+        }
     }
 }
