@@ -18,7 +18,7 @@ import org.telegram.telegrambots.starter.SpringWebhookBot;
 
 @Log4j2
 @Component
-public class TelegramBot extends SpringWebhookBot{
+public class TelegramBot extends SpringWebhookBot {
     private final String botPath;
     private final String botUsername;
     private final String botToken;
@@ -42,6 +42,10 @@ public class TelegramBot extends SpringWebhookBot{
             return new SendMessage(update.getMessage().getChatId().toString(),
                     e.getMessage());
         } catch (Exception e) {
+            StackTraceElement[] stackTraceElements = e.getStackTrace();
+            for (StackTraceElement element : stackTraceElements) {
+                log.error(element);
+            }
             log.error(e);
             return new SendMessage(update.getMessage().getChatId().toString(),
                     BotMessageEnum.UNKNOWN_EXCEPTION.getMessage());

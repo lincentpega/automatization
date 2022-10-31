@@ -3,6 +3,7 @@ package com.lincentpega.javawildberriesselfbuy.service;
 public enum SessionState {
     SESSION_STARTED,
     SITE_ENTERED,
+    AUTHENTICATED_WITH_COOKIES,
     NUMBER_ENTERED,
     CAPTCHA_ENTERED,
     SMS_CODE_ENTERED,

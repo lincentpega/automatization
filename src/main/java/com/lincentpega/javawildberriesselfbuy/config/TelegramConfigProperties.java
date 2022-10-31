@@ -10,7 +10,10 @@ import org.springframework.stereotype.Component;
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TelegramConfigProperties {
-    @Value("${telegram.bot-path}") String botPath;
-    @Value("${telegram.bot-username}") String botUsername;
-    @Value("${telegram.bot-token}") String botToken;
+    @Value("${telegram.bot-path}")
+    String botPath;
+    @Value("${telegram.bot-username}")
+    String botUsername;
+    @Value("${telegram.bot-token}")
+    String botToken;
 }

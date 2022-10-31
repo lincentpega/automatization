@@ -1,6 +1,6 @@
 package com.lincentpega.javawildberriesselfbuy.exceptions;
 
-public class TelegramFileUploadException extends Exception{
+public class TelegramFileUploadException extends Exception {
     public TelegramFileUploadException() {
     }
 

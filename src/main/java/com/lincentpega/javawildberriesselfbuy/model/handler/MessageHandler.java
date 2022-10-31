@@ -98,13 +98,21 @@ public class MessageHandler {
             ChromeSession userSession = idSessionHashMap.get(userId);
             SessionState sessionState = userSession.getUpdatedState();
 
-            if (sessionState == SessionState.SITE_ENTERED && isPhoneNumber(message)) {
+            if (sessionState == SessionState.SITE_ENTERED
+                    && isPhoneNumber(message)) {
                 return processNumber(message, userSession);
-            } else if (sessionState == SessionState.CAPTCHA_APPEARED || sessionState == SessionState.CAPTCHA_CODE_WRONG) {
+
+            } else if (sessionState == SessionState.CAPTCHA_APPEARED
+                    || sessionState == SessionState.CAPTCHA_CODE_WRONG) {
                 return processCaptcha(message, userSession);
-            } else if ((sessionState == SessionState.SMS_REQUESTED || sessionState == SessionState.WRONG_CODE_ENTERED) && isCode(message)) {
+
+            } else if ((sessionState == SessionState.SMS_REQUESTED
+                    || sessionState == SessionState.WRONG_CODE_ENTERED)
+                    && isCode(message)) {
                 return processCode(message, userSession);
+
             } else {
+                log.warn("Illegal input: state = " + sessionState + " message = " + message);
                 throw new IllegalInputException(BotMessageEnum.ILLEGAL_INPUT.getMessage());
             }
         } else {
@@ -126,6 +134,16 @@ public class MessageHandler {
 
     private BotApiMethod<?> processNumber(Message message, ChromeSession userSession) {
         String userId = extractUserId(message);
+
+        userSession.setNumber(message.getText());
+
+        if (userSession.isCookiesExist()) {
+            userSession.uploadCookies();
+            userSession.openHomePage();
+            userSession.setState(SessionState.AUTHENTICATED_WITH_COOKIES);
+            return new SendMessage(message.getChatId().toString(), "Выполнена авторизация по куки-файлам");
+        }
+
         userSession.enterNumber(message.getText());
 
         SessionState state = userSession.getUpdatedState();
@@ -139,7 +157,7 @@ public class MessageHandler {
             }
             return new SendMessage(message.getChatId().toString(), "Введите капчу с картинки");
         } else if (state == SessionState.PUSH_UP_REQUESTED) {
-            userSession.requestCodeAsSMS();
+            userSession.requestCodeAsSMS(); //FIXME: input in telegram bot "Неверный пользовательский ввод" when performing
             state = userSession.getUpdatedState();
             if (state == SessionState.CAPTCHA_APPEARED) {
                 try {
@@ -177,7 +195,6 @@ public class MessageHandler {
     }
 
     private BotApiMethod<?> processCode(Message message, ChromeSession userSession) throws IllegalInputException {
-        String userId = extractUserId(message);
         userSession.enterCode(message.getText());
 
         SessionState state = userSession.getUpdatedState();
@@ -186,6 +203,7 @@ public class MessageHandler {
             case WRONG_CODE_ENTERED:
                 return new SendMessage(message.getChatId().toString(), "Введён неверный код, введите ещё раз");
             case AUTHENTICATED:
+                userSession.saveCookies();
                 return new SendMessage(message.getChatId().toString(), "Вы усешно вошли, можете продолжить");
             default:
                 throw new IllegalInputException("Неверное состояние, перезапустите сессию /close, потом /start");

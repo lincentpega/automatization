@@ -1,5 +1,7 @@
 package com.lincentpega.javawildberriesselfbuy.service;
 
+import com.lincentpega.javawildberriesselfbuy.repository.CookieWrapper;
+import com.lincentpega.javawildberriesselfbuy.repository.UserRepository;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
@@ -13,6 +15,8 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
@@ -21,15 +25,18 @@ import java.util.concurrent.TimeUnit;
 @Log4j2
 public class ChromeSession {
     private SessionState state;
+    private String number;
     private final WebDriver driver;
     private final LocalDateTime creationDateTime;
+    private final UserRepository userRepository;
 
 
     @Autowired
-    public ChromeSession(ChromeOptions chromeOptions) {
+    public ChromeSession(ChromeOptions chromeOptions, UserRepository userRepository) {
         this.creationDateTime = LocalDateTime.now();
         this.state = SessionState.SESSION_STARTED;
         this.driver = new ChromeDriver(chromeOptions);
+        this.userRepository = userRepository;
 
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(1));
     }
@@ -45,8 +52,12 @@ public class ChromeSession {
         state = SessionState.SITE_ENTERED;
     }
 
-    public void enterNumber(String number) {
+    public void openHomePage() {
+        String link = "https://www.wildberries.ru";
+        driver.get(link);
+    }
 
+    public void enterNumber(String number) {
         WebElement numberInputFormBlock = driver.findElement(By.cssSelector("form#spaAuthForm"));
         WebElement numberInputField = numberInputFormBlock.findElement(By.cssSelector("input.input-item"));
         numberInputField.sendKeys(number);
@@ -96,7 +107,7 @@ public class ChromeSession {
 
     public void requestCodeAsSMS() {
         try {
-            TimeUnit.SECONDS.sleep(60);
+            TimeUnit.SECONDS.sleep(70);
         } catch (InterruptedException e) {
             log.warn(e);
         }
@@ -105,6 +116,38 @@ public class ChromeSession {
         requestSMSButton.click();
 
         state = SessionState.REQUESTED_CODE_AS_SMS;
+    }
+
+    public void saveCookies() {
+        Set<Cookie> cookies = driver.manage().getCookies();
+        log.info(cookies);
+        User user = new User(number, cookies);
+        userRepository.save(user);
+    }
+
+    public boolean isCookiesExist() {
+        return userRepository.existsById(number);
+    }
+
+    public void uploadCookies() {
+        if (userRepository.existsById(number)) {
+            Optional<User> optionalUser = userRepository.findById(number);
+            if (optionalUser.isPresent()) {
+                User user = optionalUser.get();
+                var cookies = user.getCookies();
+                for (CookieWrapper cookie : cookies) {
+                    driver.manage().addCookie(new Cookie(cookie.getName(), cookie.getValue())); //TODO: Add cookies expiration date check
+                }
+            }
+        }
+    }
+
+    public void setState(SessionState state) {
+        this.state = state;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
     }
 
     private boolean isPushUpSent() {
@@ -139,7 +182,7 @@ public class ChromeSession {
 
     private boolean isCodeSent() {
         try {
-            driver.findElement(By.cssSelector("#spaAuthForm > div > div.login__code.form-block > div > input")); // FIXME: проверить на индивадуальность селектора
+            driver.findElement(By.cssSelector("#spaAuthForm > div > div.login__code.form-block > div > input"));
             return true;
         } catch (NoSuchElementException e) {
             return false;
@@ -159,7 +202,7 @@ public class ChromeSession {
                     state = SessionState.CAPTCHA_APPEARED;
                 } else if (isPushUpSent()) {
                     state = SessionState.PUSH_UP_REQUESTED;
-                } else  {
+                } else {
                     state = SessionState.SMS_REQUESTED;
                 }
                 break;
@@ -181,7 +224,14 @@ public class ChromeSession {
                 }
                 break;
 
-            case REQUESTED_CODE_AS_SMS: //FIXME: капча может появляться после запроса кода через смс, обработать случай
+            case REQUESTED_CODE_AS_SMS:
+
+                try {
+                    TimeUnit.SECONDS.sleep(3);
+                } catch (InterruptedException e) {
+                    log.warn(e);
+                }
+
                 if (isCaptchaAppeared()) {
                     state = SessionState.CAPTCHA_APPEARED;
                 } else {
@@ -190,6 +240,12 @@ public class ChromeSession {
                 break;
 
             case SMS_CODE_ENTERED:
+
+                try {
+                    TimeUnit.SECONDS.sleep(3);
+                } catch (InterruptedException e) {
+                    log.warn(e);
+                }
 
                 if (isCodeWrong()) {
                     state = SessionState.WRONG_CODE_ENTERED;
