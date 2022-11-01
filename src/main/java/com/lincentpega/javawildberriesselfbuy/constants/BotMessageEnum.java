@@ -6,7 +6,8 @@ public enum BotMessageEnum {
     SESSION_ALREADY_EXISTS("Сессия уже существует"),
     SESSION_CREATED("Сессия создана, вход на Wildberries выполнен," +
             " введите номер телефона для авторизации начиная с цифры 9"),
-    ILLEGAL_INPUT("Неверный пользовательский ввод");
+    ILLEGAL_INPUT("Неверный пользовательский ввод"),
+    HELP_MESSAGE("Помощь:\nЗапустить сессию: /start\nСостояние сессии: /state\nЗавершить сессию: /close");
 
     private final String message;
 

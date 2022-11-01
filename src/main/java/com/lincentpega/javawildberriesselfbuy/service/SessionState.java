@@ -2,8 +2,8 @@ package com.lincentpega.javawildberriesselfbuy.service;
 
 public enum SessionState {
     SESSION_STARTED,
+    SESSION_CLOSED,
     SITE_ENTERED,
-    AUTHENTICATED_WITH_COOKIES,
     NUMBER_ENTERED,
     CAPTCHA_ENTERED,
     SMS_CODE_ENTERED,
@@ -14,5 +14,6 @@ public enum SessionState {
     SMS_REQUESTED,
     WRONG_CODE_ENTERED,
     AUTHENTICATED,
-    SESSION_CLOSED
+    ON_GOOD_PAGE,
+    ON_UNAVAILABLE_URL,
 }

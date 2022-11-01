@@ -1,5 +1,6 @@
 package com.lincentpega.javawildberriesselfbuy.service;
 
+import com.lincentpega.javawildberriesselfbuy.dao.User;
 import com.lincentpega.javawildberriesselfbuy.repository.CookieWrapper;
 import com.lincentpega.javawildberriesselfbuy.repository.UserRepository;
 import lombok.extern.log4j.Log4j2;
@@ -96,6 +97,25 @@ public class ChromeSession {
         state = SessionState.SMS_CODE_ENTERED;
     }
 
+    public void goToGood(String url) {
+        driver.get(url);
+        if (isGoodPresent()) {
+            state = SessionState.ON_GOOD_PAGE;
+        } else {
+            state = SessionState.ON_UNAVAILABLE_URL;
+        }
+    }
+
+    public void goToRecommended() {
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+            //Scroll down till the bottom of the page
+        js.executeScript("window.scrollBy(0,document.body.scrollHeight)");
+
+        WebElement recommendedGood = driver.findElement(By.cssSelector("div.goods-card__img-wrap.img-plug"));
+        recommendedGood.click();
+
+    }
+
     public String getCreationDateTime() {
         return creationDateTime.toString();
     }
@@ -183,6 +203,15 @@ public class ChromeSession {
     private boolean isCodeSent() {
         try {
             driver.findElement(By.cssSelector("#spaAuthForm > div > div.login__code.form-block > div > input"));
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    private boolean isGoodPresent() {
+        try {
+            driver.findElement(By.cssSelector("div.product-page__header-wrap"));
             return true;
         } catch (NoSuchElementException e) {
             return false;

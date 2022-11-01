@@ -4,6 +4,7 @@ import com.lincentpega.javawildberriesselfbuy.constants.BotMessageEnum;
 import com.lincentpega.javawildberriesselfbuy.controller.TelegramApiClient;
 import com.lincentpega.javawildberriesselfbuy.exceptions.IllegalInputException;
 import com.lincentpega.javawildberriesselfbuy.exceptions.TelegramFileUploadException;
+import com.lincentpega.javawildberriesselfbuy.model.BotState;
 import com.lincentpega.javawildberriesselfbuy.service.ChromeSession;
 import com.lincentpega.javawildberriesselfbuy.service.SessionState;
 import lombok.extern.log4j.Log4j2;
@@ -27,29 +28,79 @@ import java.util.regex.Pattern;
 public class MessageHandler {
     private final HashMap<String, ChromeSession> idSessionHashMap;
     private final TelegramApiClient telegramApiClient;
+    private BotState botState;
 
     public MessageHandler(TelegramApiClient telegramApiClient) {
         idSessionHashMap = new HashMap<>();
         this.telegramApiClient = telegramApiClient;
+        this.botState = BotState.NOT_AUTHENTICATED;
     }
 
     public BotApiMethod<?> handleUpdate(Update update) throws IllegalInputException, WebDriverException {
         Message message = update.getMessage();
+        String messageText = message.getText();
+        String userId = message.getFrom().getId().toString();
 
+        ChromeSession userSession = idSessionHashMap.get(userId);
         if (message.hasText()) {
-            switch (message.getText()) {
-                case "/start":
-                    return processStart(message);
-                case "/state":
-                    return processState(message);
-                case "/close":
-                    return processClose(message);
-                default:
-                    return handlePlainMessage(message);
+            if (messageText.equals("/help"))
+                return processHelp(message);
+            else if (messageText.equals("/start"))
+                return processStart(message);
+            else if (messageText.equals("/state"))
+                return processState(message);
+            else if (messageText.equals("/close"))
+                return processClose(message);
+            else if (botState == BotState.AUTHENTICATED) {
+                var messageEntities = message.getEntities();
+
+                if (messageEntities.size() == 2 && messageEntities.get(0).getText().equals("/goto")) {
+                    return processGoTo(message);
+                }
+                if (messageEntities.size() == 1 && messageEntities.get(0).getText().equals("/recommended")){
+                    return processRecommended(message);
+                }
             }
+                return handlePlainMessage(message);
         } else {
             throw new IllegalInputException("Сообщение пусто");
         }
+
+    }
+
+    private BotApiMethod<?> processRecommended(Message message) throws IllegalInputException {
+        String userId = extractUserId(message);
+
+        if (idSessionHashMap.containsKey(userId)) {
+            String messageText = message.getText();
+            ChromeSession userSession = idSessionHashMap.get(userId);
+            userSession.goToRecommended();
+            return new SendMessage(message.getChatId().toString(), "Переход на рекомендованный товар выполнен");
+        } else {
+            throw new IllegalInputException(BotMessageEnum.SESSION_DOESNT_EXIST.getMessage());
+        }
+    }
+
+    private BotApiMethod<?> processGoTo(Message message) throws IllegalInputException {
+        String userId = extractUserId(message);
+
+        if (idSessionHashMap.containsKey(userId)) {
+            var messageEntities = message.getEntities();
+            String url = messageEntities.get(1).getText();
+            if (isGoodUrl(url)) {
+                ChromeSession userSession = idSessionHashMap.get(userId);
+                userSession.goToGood(url);
+                return new SendMessage(message.getChatId().toString(), "Переход на страницу товара выполнен успешно");
+            } else {
+                throw new IllegalInputException("Illegal good URL");
+            }
+        } else {
+            throw new IllegalInputException(BotMessageEnum.SESSION_ALREADY_EXISTS.getMessage());
+        }
+    }
+
+    private BotApiMethod<?> processHelp(Message message) {
+        return new SendMessage(message.getChatId().toString(), BotMessageEnum.HELP_MESSAGE.getMessage());
     }
 
     private BotApiMethod<?> processStart(Message message) throws IllegalInputException {
@@ -132,6 +183,11 @@ public class MessageHandler {
         return Pattern.matches("\\d{4}", messageText);
     }
 
+    private boolean isGoodUrl(String url) {
+        url = url.trim();
+        return Pattern.matches("https://www.wildberries.ru/catalog/.*", url);
+    }
+
     private BotApiMethod<?> processNumber(Message message, ChromeSession userSession) {
         String userId = extractUserId(message);
 
@@ -140,7 +196,8 @@ public class MessageHandler {
         if (userSession.isCookiesExist()) {
             userSession.uploadCookies();
             userSession.openHomePage();
-            userSession.setState(SessionState.AUTHENTICATED_WITH_COOKIES);
+            userSession.setState(SessionState.AUTHENTICATED);
+            botState = BotState.AUTHENTICATED;
             return new SendMessage(message.getChatId().toString(), "Выполнена авторизация по куки-файлам");
         }
 
@@ -204,6 +261,7 @@ public class MessageHandler {
                 return new SendMessage(message.getChatId().toString(), "Введён неверный код, введите ещё раз");
             case AUTHENTICATED:
                 userSession.saveCookies();
+                botState = BotState.AUTHENTICATED;
                 return new SendMessage(message.getChatId().toString(), "Вы усешно вошли, можете продолжить");
             default:
                 throw new IllegalInputException("Неверное состояние, перезапустите сессию /close, потом /start");

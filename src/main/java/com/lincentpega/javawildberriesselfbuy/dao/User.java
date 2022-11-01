@@ -1,4 +1,4 @@
-package com.lincentpega.javawildberriesselfbuy.service;
+package com.lincentpega.javawildberriesselfbuy.dao;
 
 import com.lincentpega.javawildberriesselfbuy.repository.CookieWrapper;
 import lombok.AllArgsConstructor;
