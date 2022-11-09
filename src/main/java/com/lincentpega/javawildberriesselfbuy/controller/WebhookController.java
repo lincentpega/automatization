@@ -1,6 +1,6 @@
 package com.lincentpega.javawildberriesselfbuy.controller;
 
-import com.lincentpega.javawildberriesselfbuy.model.TelegramBot;
+import com.lincentpega.javawildberriesselfbuy.service.TelegramBot;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

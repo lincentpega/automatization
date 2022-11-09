@@ -1,10 +1,10 @@
-package com.lincentpega.javawildberriesselfbuy.model;
+package com.lincentpega.javawildberriesselfbuy.service;
 
 import com.lincentpega.javawildberriesselfbuy.config.TelegramConfigProperties;
 
 import com.lincentpega.javawildberriesselfbuy.constants.BotMessageEnum;
 import com.lincentpega.javawildberriesselfbuy.exceptions.IllegalInputException;
-import com.lincentpega.javawildberriesselfbuy.model.handler.MessageHandler;
+import com.lincentpega.javawildberriesselfbuy.service.handler.MessageHandler;
 import lombok.extern.log4j.Log4j2;
 
 import org.springframework.stereotype.Component;

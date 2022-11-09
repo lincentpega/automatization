@@ -1,12 +1,12 @@
-package com.lincentpega.javawildberriesselfbuy.model.handler;
+package com.lincentpega.javawildberriesselfbuy.service.handler;
 
 import com.lincentpega.javawildberriesselfbuy.constants.BotMessageEnum;
 import com.lincentpega.javawildberriesselfbuy.controller.TelegramApiClient;
 import com.lincentpega.javawildberriesselfbuy.exceptions.IllegalInputException;
 import com.lincentpega.javawildberriesselfbuy.exceptions.TelegramFileUploadException;
-import com.lincentpega.javawildberriesselfbuy.model.BotState;
+import com.lincentpega.javawildberriesselfbuy.constants.BotState;
 import com.lincentpega.javawildberriesselfbuy.service.ChromeSession;
-import com.lincentpega.javawildberriesselfbuy.service.SessionState;
+import com.lincentpega.javawildberriesselfbuy.constants.SessionState;
 import lombok.extern.log4j.Log4j2;
 import org.openqa.selenium.WebDriverException;
 import org.springframework.beans.factory.annotation.Lookup;
@@ -43,45 +43,44 @@ public class MessageHandler {
 
         ChromeSession userSession = idSessionHashMap.get(userId);
         if (message.hasText()) {
-            if (messageText.equals("/help"))
-                return processHelp(message);
-            else if (messageText.equals("/start"))
-                return processStart(message);
-            else if (messageText.equals("/state"))
-                return processState(message);
-            else if (messageText.equals("/close"))
-                return processClose(message);
-            else if (botState == BotState.AUTHENTICATED) {
-                var messageEntities = message.getEntities();
+            var messageEntities = message.getEntities();
 
-                if (messageEntities.size() == 2 && messageEntities.get(0).getText().equals("/goto")) {
-                    return processGoTo(message);
-                }
-                if (messageEntities.size() == 1 && messageEntities.get(0).getText().equals("/recommended")){
-                    return processRecommended(message);
-                }
-            }
+            if (messageText.equals("/help")) {
+                return processHelp(message);
+            } else if (messageText.equals("/start")) {
+                return processStart(message);
+            } else if (messageText.equals("/state")) {
+                return processState(message);
+            } else if (messageText.equals("/close")) {
+                botState = BotState.NOT_AUTHENTICATED;
+                return processClose(message);
+            } else if (botState == BotState.AUTHENTICATED
+                    && messageEntities.size() == 2
+                    && messageEntities.get(0).getText().equals("/offer")) {
+                return processOffer(message);
+            } else if (botState == BotState.GOOD_IN_CART && !message.getText().equals("cancel")) {
+                return processAddress(message);
+            } else {
                 return handlePlainMessage(message);
+            }
         } else {
             throw new IllegalInputException("Сообщение пусто");
         }
-
     }
 
-    private BotApiMethod<?> processRecommended(Message message) throws IllegalInputException {
+    private BotApiMethod<?> processAddress(Message message) throws IllegalInputException {
         String userId = extractUserId(message);
 
         if (idSessionHashMap.containsKey(userId)) {
-            String messageText = message.getText();
             ChromeSession userSession = idSessionHashMap.get(userId);
-            userSession.goToRecommended();
-            return new SendMessage(message.getChatId().toString(), "Переход на рекомендованный товар выполнен");
+            userSession.chooseAddress(message.getText());
+            return new SendMessage(message.getChatId().toString(), "Выберите подходящий для доставки адрес цифрой по порядку сверху");
         } else {
             throw new IllegalInputException(BotMessageEnum.SESSION_DOESNT_EXIST.getMessage());
         }
     }
 
-    private BotApiMethod<?> processGoTo(Message message) throws IllegalInputException {
+    private BotApiMethod<?> processOffer(Message message) throws IllegalInputException {
         String userId = extractUserId(message);
 
         if (idSessionHashMap.containsKey(userId)) {
@@ -89,13 +88,17 @@ public class MessageHandler {
             String url = messageEntities.get(1).getText();
             if (isGoodUrl(url)) {
                 ChromeSession userSession = idSessionHashMap.get(userId);
-                userSession.goToGood(url);
-                return new SendMessage(message.getChatId().toString(), "Переход на страницу товара выполнен успешно");
+                userSession.addGoodToCart(url);
+
+                botState = BotState.GOOD_IN_CART;
+
+                return new SendMessage(message.getChatId().toString(), "Товар выбран и отправлен в корзину,"
+                        + " введите адрес доставки в формате <Город, улица, дом>, чтобы прервать ввод, введите cancel");
             } else {
                 throw new IllegalInputException("Illegal good URL");
             }
         } else {
-            throw new IllegalInputException(BotMessageEnum.SESSION_ALREADY_EXISTS.getMessage());
+            throw new IllegalInputException(BotMessageEnum.SESSION_DOESNT_EXIST.getMessage());
         }
     }
 
@@ -205,24 +208,16 @@ public class MessageHandler {
 
         SessionState state = userSession.getUpdatedState();
 
+        if (state == SessionState.PUSH_UP_REQUESTED || state == SessionState.NOTIFICATION_SENT) {
+            userSession.requestCodeAsSMS();
+            state = userSession.getUpdatedState();
+        }
         if (state == SessionState.CAPTCHA_APPEARED) {
             try {
                 userSession.takeScreenshot(userId);
                 sendScreenshot(message);
             } catch (IOException | TelegramFileUploadException e) {
                 return new SendMessage(message.getChatId().toString(), "Проблема с загрузкой скриншота, обратитесь к разработчику");
-            }
-            return new SendMessage(message.getChatId().toString(), "Введите капчу с картинки");
-        } else if (state == SessionState.PUSH_UP_REQUESTED) {
-            userSession.requestCodeAsSMS(); //FIXME: input in telegram bot "Неверный пользовательский ввод" when performing
-            state = userSession.getUpdatedState();
-            if (state == SessionState.CAPTCHA_APPEARED) {
-                try {
-                    userSession.takeScreenshot(userId);
-                    sendScreenshot(message);
-                } catch (IOException | TelegramFileUploadException e) {
-                    return new SendMessage(message.getChatId().toString(), "Проблема с загрузкой скриншота, обратитесь к разработчику");
-                }
             }
             return new SendMessage(message.getChatId().toString(), "Введите капчу с картинки");
         } else {
@@ -264,6 +259,7 @@ public class MessageHandler {
                 botState = BotState.AUTHENTICATED;
                 return new SendMessage(message.getChatId().toString(), "Вы усешно вошли, можете продолжить");
             default:
+                log.warn("Inappropriate state, provided" + state + ",expected " + SessionState.WRONG_CODE_ENTERED + "or " + SessionState.AUTHENTICATED);
                 throw new IllegalInputException("Неверное состояние, перезапустите сессию /close, потом /start");
         }
     }

@@ -1,6 +1,6 @@
-package com.lincentpega.javawildberriesselfbuy.dao;
+package com.lincentpega.javawildberriesselfbuy.model;
 
-import com.lincentpega.javawildberriesselfbuy.repository.CookieWrapper;
+import com.lincentpega.javawildberriesselfbuy.dto.CookieDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,15 +19,15 @@ public class User implements Serializable {
 
     @Id
     private String number;
-    private HashSet<CookieWrapper> cookies;
+    private HashSet<CookieDto> cookies;
 
     public User(String number, Set<Cookie> cookies) {
         this.number = number;
 
-        HashSet<CookieWrapper> cookieWrappers = new HashSet<>();
+        HashSet<CookieDto> cookieDtos = new HashSet<>();
         for (Cookie cookie : cookies) {
-            cookieWrappers.add(new CookieWrapper(cookie));
+            cookieDtos.add(new CookieDto(cookie));
         }
-        this.cookies = cookieWrappers;
+        this.cookies = cookieDtos;
     }
 }

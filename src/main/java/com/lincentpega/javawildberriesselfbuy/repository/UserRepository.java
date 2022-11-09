@@ -1,6 +1,6 @@
 package com.lincentpega.javawildberriesselfbuy.repository;
 
-import com.lincentpega.javawildberriesselfbuy.dao.User;
+import com.lincentpega.javawildberriesselfbuy.model.User;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

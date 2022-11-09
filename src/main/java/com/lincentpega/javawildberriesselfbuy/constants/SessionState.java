@@ -1,4 +1,4 @@
-package com.lincentpega.javawildberriesselfbuy.service;
+package com.lincentpega.javawildberriesselfbuy.constants;
 
 public enum SessionState {
     SESSION_STARTED,
@@ -10,10 +10,14 @@ public enum SessionState {
     CAPTCHA_APPEARED,
     CAPTCHA_CODE_WRONG,
     PUSH_UP_REQUESTED,
+    NOTIFICATION_SENT,
     REQUESTED_CODE_AS_SMS,
     SMS_REQUESTED,
     WRONG_CODE_ENTERED,
     AUTHENTICATED,
+    GOOD_PAGE_REQUESTED,
     ON_GOOD_PAGE,
     ON_UNAVAILABLE_URL,
+    ADDRESS_SENT,
+
 }
