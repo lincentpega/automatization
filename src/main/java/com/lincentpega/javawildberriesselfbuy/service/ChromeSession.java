@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
@@ -32,6 +31,7 @@ public class ChromeSession {
     private final WebDriver driver;
     private final LocalDateTime creationDateTime;
     private final UserRepository userRepository;
+    private boolean isAuthenticated;
 
 
     @Autowired
@@ -40,6 +40,7 @@ public class ChromeSession {
         this.state = SessionState.SESSION_STARTED;
         this.driver = new ChromeDriver(chromeOptions);
         this.userRepository = userRepository;
+        this.isAuthenticated = false;
 
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(1));
     }
@@ -96,6 +97,7 @@ public class ChromeSession {
         );
         codeInputField.sendKeys(code);
 
+        isAuthenticated = true;
         state = SessionState.SMS_CODE_ENTERED;
     }
 
@@ -107,7 +109,7 @@ public class ChromeSession {
             log.warn(e);
         }
         addToCart();
-        driver.get("https://www.wildberries.ru/lk/basket");
+        state = SessionState.GOOD_IN_CART;
     }
 
     public void chooseAddress(String address) {
@@ -121,7 +123,6 @@ public class ChromeSession {
         inputAddress(address);
         state = SessionState.ADDRESS_SENT;
     }
-
 
     public String getCreationDateTime() {
         return creationDateTime.toString();
@@ -179,8 +180,11 @@ public class ChromeSession {
         }
     }
 
-    public void authByCookies() {
-
+    public void authenticateByCookies() {
+        uploadCookies();
+        openHomePage();
+        isAuthenticated = true;
+        state = SessionState.AUTHENTICATED;
     }
 
     public void setState(SessionState state) {
@@ -189,6 +193,10 @@ public class ChromeSession {
 
     public void setNumber(String number) {
         this.number = number;
+    }
+
+    public boolean isAuthenticated() {
+        return isAuthenticated;
     }
 
     private void addToCart() {

@@ -28,12 +28,10 @@ import java.util.regex.Pattern;
 public class MessageHandler {
     private final HashMap<String, ChromeSession> idSessionHashMap;
     private final TelegramApiClient telegramApiClient;
-    private BotState botState;
 
     public MessageHandler(TelegramApiClient telegramApiClient) {
         idSessionHashMap = new HashMap<>();
         this.telegramApiClient = telegramApiClient;
-        this.botState = BotState.NOT_AUTHENTICATED;
     }
 
     public BotApiMethod<?> handleUpdate(Update update) throws IllegalInputException, WebDriverException {
@@ -52,13 +50,13 @@ public class MessageHandler {
             } else if (messageText.equals("/state")) {
                 return processState(message);
             } else if (messageText.equals("/close")) {
-                botState = BotState.NOT_AUTHENTICATED;
                 return processClose(message);
-            } else if (botState == BotState.AUTHENTICATED
+            } else if (userSession.isAuthenticated()
                     && messageEntities.size() == 2
                     && messageEntities.get(0).getText().equals("/offer")) {
                 return processOffer(message);
-            } else if (botState == BotState.GOOD_IN_CART && !message.getText().equals("cancel")) {
+            } else if (userSession.getUpdatedState() == SessionState.GOOD_IN_CART
+                    && !message.getText().equals("cancel")) {
                 return processAddress(message);
             } else {
                 return handlePlainMessage(message);
@@ -89,8 +87,6 @@ public class MessageHandler {
             if (isGoodUrl(url)) {
                 ChromeSession userSession = idSessionHashMap.get(userId);
                 userSession.addGoodToCart(url);
-
-                botState = BotState.GOOD_IN_CART;
 
                 return new SendMessage(message.getChatId().toString(), "Товар выбран и отправлен в корзину,"
                         + " введите адрес доставки в формате <Город, улица, дом>, чтобы прервать ввод, введите cancel");
@@ -197,10 +193,7 @@ public class MessageHandler {
         userSession.setNumber(message.getText());
 
         if (userSession.isCookiesExist()) {
-            userSession.uploadCookies();
-            userSession.openHomePage();
-            userSession.setState(SessionState.AUTHENTICATED);
-            botState = BotState.AUTHENTICATED;
+            userSession.authenticateByCookies();
             return new SendMessage(message.getChatId().toString(), "Выполнена авторизация по куки-файлам");
         }
 
@@ -256,7 +249,6 @@ public class MessageHandler {
                 return new SendMessage(message.getChatId().toString(), "Введён неверный код, введите ещё раз");
             case AUTHENTICATED:
                 userSession.saveCookies();
-                botState = BotState.AUTHENTICATED;
                 return new SendMessage(message.getChatId().toString(), "Вы усешно вошли, можете продолжить");
             default:
                 log.warn("Inappropriate state, provided" + state + ",expected " + SessionState.WRONG_CODE_ENTERED + "or " + SessionState.AUTHENTICATED);

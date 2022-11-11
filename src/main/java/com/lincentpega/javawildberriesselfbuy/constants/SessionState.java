@@ -19,5 +19,6 @@ public enum SessionState {
     ON_GOOD_PAGE,
     ON_UNAVAILABLE_URL,
     ADDRESS_SENT,
+    GOOD_IN_CART,
 
 }
