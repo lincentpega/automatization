@@ -9,6 +9,8 @@ import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -108,12 +110,18 @@ public class ChromeSession {
         } catch (InterruptedException e) {
             log.warn(e);
         }
+
         addToCart();
+
+        driver.get("https://www.wildberries.ru/lk/basket");
+
         state = SessionState.GOOD_IN_CART;
     }
 
     public void chooseAddress(String address) {
-        toAddressChoose();
+
+        toAddressChoise();
+
         try {
             TimeUnit.SECONDS.sleep(3);
         } catch (InterruptedException e) {
@@ -134,11 +142,8 @@ public class ChromeSession {
     }
 
     public void requestCodeAsSMS() {
-        try {
-            TimeUnit.SECONDS.sleep(70);
-        } catch (InterruptedException e) {
-            log.warn(e);
-        }
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(70));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#requestCode")));
 
         WebElement requestSMSButton = driver.findElement(By.cssSelector("#requestCode"));
         requestSMSButton.click();
@@ -200,6 +205,11 @@ public class ChromeSession {
     }
 
     private void addToCart() {
+        if (isGoodHaveSizes()) {
+            WebElement sizeButton = driver.findElement(By.cssSelector("label.j-size"));
+            sizeButton.click();
+        }
+
         WebElement addToCartButton = driver.findElement(
                 By.cssSelector("div > div.product-page__aside-container.j-price-block > div:nth-child(2) > div > button:nth-child(2)"));
 
@@ -212,7 +222,7 @@ public class ChromeSession {
         offerButton.click();
     }
 
-    private void toAddressChoose() {
+    private void toAddressChoise() {
         WebElement addressChooseLink = driver.findElement(
                 By.cssSelector("div.basket-delivery__choose-address.j-btn-choose-address"));
         addressChooseLink.click();
@@ -260,6 +270,15 @@ public class ChromeSession {
             String notificationMessage = notificationMessageBlock.getText().trim();
 
             return notificationMessage.contains("Код для авторизации отправлен в раздел «Уведомления»");
+        } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    private boolean isGoodHaveSizes() {
+        try {
+            driver.findElement(By.cssSelector("label.j-size"));
+            return true;
         } catch (NoSuchElementException e) {
             return false;
         }

@@ -38,9 +38,10 @@ public class TelegramBot extends SpringWebhookBot {
     public BotApiMethod<?> onWebhookUpdateReceived(Update update) {
         try {
             return handleUpdate(update);
+
         } catch (IllegalInputException e) {
-            return new SendMessage(update.getMessage().getChatId().toString(),
-                    e.getMessage());
+            return new SendMessage(update.getMessage().getChatId().toString(), e.getMessage());
+
         } catch (Exception e) {
             StackTraceElement[] stackTraceElements = e.getStackTrace();
             for (StackTraceElement element : stackTraceElements) {
@@ -54,7 +55,7 @@ public class TelegramBot extends SpringWebhookBot {
 
     private BotApiMethod<?> handleUpdate(Update update) throws IllegalInputException {
         if (update.hasMessage()) {
-            return messageHandler.handleUpdate(update);
+            return messageHandler.handleUpdateWithMessage(update);
         } else {
             throw new IllegalInputException("Неверный тип сообщения");
         }
