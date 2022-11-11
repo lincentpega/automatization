@@ -97,6 +97,7 @@ public class ChromeSession {
         WebElement codeInputField = codeInputFormBlock.findElement(
                 By.cssSelector("input.j-input-confirm-code.val-msg")
         );
+        codeInputField.clear();
         codeInputField.sendKeys(code);
 
         isAuthenticated = true;
@@ -141,7 +142,7 @@ public class ChromeSession {
         return state;
     }
 
-    public void requestCodeAsSMS() {
+    public void requestCodeAsSMS() { // FIXME: webhook response latency equals 60 seconds then new webhook update will be sent, so, while this func executes new message is incorrectly handled
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(70));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#requestCode")));
 
@@ -171,7 +172,7 @@ public class ChromeSession {
                 var cookies = user.getCookies();
                 for (CookieDto cookie : cookies) {
                     driver.manage().addCookie(
-                            new Cookie(cookie.getName(), //TODO: Add cookies expiration date check
+                            new Cookie(cookie.getName(),
                                     cookie.getValue(),
                                     cookie.getDomain(),
                                     cookie.getPath(),
