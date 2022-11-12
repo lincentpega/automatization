@@ -44,7 +44,7 @@ public class ChromeSession {
         this.userRepository = userRepository;
         this.isAuthenticated = false;
 
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(1));
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
     }
 
     public void close() {
@@ -106,11 +106,12 @@ public class ChromeSession {
 
     public void addGoodToCart(String url) {
         driver.get(url);
-        try {
-            TimeUnit.SECONDS.sleep(3);
-        } catch (InterruptedException e) {
-            log.warn(e);
-        }
+
+        String addToCartButtonSelector = "div > div.product-page__aside-container.j-price-block > " +
+                "div:nth-child(2) > div > button:nth-child(2)";
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(addToCartButtonSelector)));
 
         addToCart();
 
@@ -120,8 +121,15 @@ public class ChromeSession {
     }
 
     public void chooseAddress(String address) {
+        toAddressChoice();
 
-        toAddressChoise();
+        String addressInputFieldSelector = "ymaps > ymaps.ymaps-2-1-79-searchbox__input-cell > " +
+                "ymaps.ymaps-2-1-79-searchbox-input > input";
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(addressInputFieldSelector)));
+
+        inputAddress(address);
 
         try {
             TimeUnit.SECONDS.sleep(3);
@@ -129,7 +137,28 @@ public class ChromeSession {
             log.warn(e);
         }
 
-        inputAddress(address);
+        String firstAddressButtonSelector = "#pooList > div.swiper-slide.swiper-slide-active > div";
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(firstAddressButtonSelector)));
+        WebElement firstAddressButton = driver.findElement(
+                By.cssSelector(firstAddressButtonSelector));
+        firstAddressButton.click();
+
+        String chooseAddressOnMapButtonSelector = "ymaps > div > div.balloon-content-block > button";
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(chooseAddressOnMapButtonSelector)));
+
+        WebElement chooseAddressOnMapButton = driver.findElement(By.cssSelector(chooseAddressOnMapButtonSelector));
+        chooseAddressOnMapButton.click();
+
+        String finallyChooseButtonSelector = "body > div.popup.i-popup-choose-address.shown > " +
+                "div > div > div.basket-delivery__methods > div.contents > " +
+                "div.contents__item.contents__self.active > div > div.popup__btn > button.popup__btn-main";
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(finallyChooseButtonSelector)));
+
+        WebElement finallyChooseButton = driver.findElement(By.cssSelector(finallyChooseButtonSelector));
+        finallyChooseButton.click();
+
         state = SessionState.ADDRESS_SENT;
     }
 
@@ -193,10 +222,6 @@ public class ChromeSession {
         state = SessionState.AUTHENTICATED;
     }
 
-    public void setState(SessionState state) {
-        this.state = state;
-    }
-
     public void setNumber(String number) {
         this.number = number;
     }
@@ -217,39 +242,76 @@ public class ChromeSession {
         addToCartButton.click();
     }
 
-    private void toOffer() {
-        WebElement offerButton = driver.findElement(
-                By.cssSelector("#basketForm > div.basket-form__sidebar.sidebar > div > div > div > div.basket-order__b-btn.b-btn > button"));
-        offerButton.click();
-    }
+    private void toAddressChoice() {
 
-    private void toAddressChoise() {
-        WebElement addressChooseLink = driver.findElement(
-                By.cssSelector("div.basket-delivery__choose-address.j-btn-choose-address"));
-        addressChooseLink.click();
+        if (isNoExistingAddress()) {
+            String addressChooseLinkSelector = "div.basket-delivery__choose-address.j-btn-choose-address";
+            WebElement addressChooseLink = driver.findElement(By.cssSelector(addressChooseLinkSelector));
+            addressChooseLink.click();
 
-        try {
-            TimeUnit.SECONDS.sleep(3);
-        } catch (InterruptedException e) {
-            log.warn(e);
+            String addressChooseButtonSelector = "body > div.popup.i-popup-choose-address.shown > div > div > " +
+                    "div.basket-delivery__methods > div.contents > div.contents__item.contents__self.active > " +
+                    "div > div.popup__btn > button";
+
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(addressChooseButtonSelector)));
+
+            WebElement addressChooseButton = driver.findElement(By.cssSelector(addressChooseButtonSelector));
+            addressChooseButton.click();
+        } else {
+            String changeAddressButtonSelector = "#basketForm > div.basket-form__content.j-basket-form__content > " +
+                    "div.basket-form__basket-section.basket-section.basket-delivery.j-b-basket-delivery > " +
+                    "div.basket-section__header-wrap > button";
+            WebElement changeAddressButton = driver.findElement(By.cssSelector(changeAddressButtonSelector));
+            changeAddressButton.click();
+
+            String changeAddressInnerButtonSelector = "body > div.popup.i-popup-choose-address.shown > div > div > " +
+                    "div.basket-delivery__methods > div.contents > div.contents__item.contents__self.active > div > " +
+                    "div.popup__btn > button.popup__btn-base";
+
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(changeAddressInnerButtonSelector)));
+
+            WebElement changeAddressInnerButton = driver.findElement(By.cssSelector(changeAddressInnerButtonSelector));
+            changeAddressInnerButton.click();
         }
-
-        WebElement addressChooseButton = driver.findElement(
-                By.cssSelector("body > div.popup.i-popup-choose-address.shown > div > div > " +
-                        "div.basket-delivery__methods > div.contents > div.contents__item.contents__self.active > " +
-                        "div > div.popup__btn > button"));
-        addressChooseButton.click();
     }
 
     private void inputAddress(String address) {
-        WebElement inputField = driver.findElement(
-                By.cssSelector("ymaps > ymaps.ymaps-2-1-79-searchbox__input-cell > " +
-                        "ymaps.ymaps-2-1-79-searchbox-input > input"));
+        String inputFieldSelector = "ymaps > ymaps.ymaps-2-1-79-searchbox__input-cell > " +
+                "ymaps.ymaps-2-1-79-searchbox-input > input";
+
+        WebElement inputField = driver.findElement(By.cssSelector(inputFieldSelector));
         inputField.sendKeys(address);
 
         WebElement findButton = driver.findElement(
                 By.cssSelector("ymaps > ymaps.ymaps-2-1-79-searchbox__button-cell > ymaps"));
         findButton.click();
+
+        if (isOptionsSuggested()) {
+            WebElement firstSuggestedOption = driver.findElement(
+                    By.cssSelector("ymaps > ymaps:nth-child(1) > ymaps > ymaps"));
+            firstSuggestedOption.click();
+        }
+
+    }
+
+    private boolean isOptionsSuggested() {
+        try {
+            driver.findElement(By.cssSelector("ymaps > ymaps:nth-child(1) > ymaps > ymaps"));
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
+        }
+    }
+
+    private boolean isNoExistingAddress() { // searches for "Выбрать адрес доставки" clickable link
+        try {
+            driver.findElement(By.cssSelector("div.basket-delivery__choose-address.j-btn-choose-address"));
+            return true;
+        } catch (NoSuchElementException e) {
+            return false;
+        }
     }
 
     private boolean isPushUpSent() {
@@ -278,7 +340,7 @@ public class ChromeSession {
 
     private boolean isGoodHaveSizes() {
         try {
-            driver.findElement(By.cssSelector("label.j-size"));
+            driver.findElement(By.cssSelector("label.j-size.active"));
             return true;
         } catch (NoSuchElementException e) {
             return false;

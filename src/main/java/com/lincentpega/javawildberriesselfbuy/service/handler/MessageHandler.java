@@ -45,7 +45,7 @@ public class MessageHandler {
                 return processStart(message);
 
             } else if (idSessionHashMap.containsKey(userId)) {
-                return handleSessionCommand(message);
+                return handleSessionMessage(message);
 
             } else {
                 throw new IllegalInputException(BotMessageEnum.SESSION_DOESNT_EXIST.getMessage());
@@ -55,7 +55,7 @@ public class MessageHandler {
         }
     }
 
-    private BotApiMethod<?> handleSessionCommand(Message message) throws IllegalInputException {
+    private BotApiMethod<?> handleSessionMessage(Message message) throws IllegalInputException {
         String messageText = message.getText();
         String userId = message.getFrom().getId().toString();
         ChromeSession userSession = idSessionHashMap.get(userId);
@@ -105,7 +105,7 @@ public class MessageHandler {
         }
     }
 
-    private BotApiMethod<?> processAddress(Message message) throws IllegalInputException {
+    private BotApiMethod<?> processAddress(Message message) {
         String userId = extractUserId(message);
 
         ChromeSession userSession = idSessionHashMap.get(userId);
@@ -125,7 +125,7 @@ public class MessageHandler {
             return new SendMessage(message.getChatId().toString(), "Товар выбран и отправлен в корзину,"
                     + " введите адрес доставки в формате <Город, улица, дом>, чтобы прервать ввод, введите cancel");
         } else {
-            throw new IllegalInputException("Illegal good URL");
+            throw new IllegalInputException("Illegal goods URL");
         }
 
     }
@@ -134,7 +134,7 @@ public class MessageHandler {
         return new SendMessage(message.getChatId().toString(), BotMessageEnum.HELP_MESSAGE.getMessage());
     }
 
-    private BotApiMethod<?> processStart(Message message) throws IllegalInputException {
+    private BotApiMethod<?> processStart(Message message) {
         String userId = extractUserId(message);
 
         if (idSessionHashMap.containsKey(userId)) {
@@ -150,7 +150,7 @@ public class MessageHandler {
 
     }
 
-    private BotApiMethod<?> processState(Message message) throws IllegalInputException {
+    private BotApiMethod<?> processState(Message message) {
         String userId = extractUserId(message);
 
         String creationDateTime = idSessionHashMap.get(userId).getCreationDateTime();
@@ -228,7 +228,7 @@ public class MessageHandler {
         }
     }
 
-    private BotApiMethod<?> processClose(Message message) throws IllegalInputException {
+    private BotApiMethod<?> processClose(Message message) {
         String userId = extractUserId(message);
 
         idSessionHashMap.get(userId).close();
