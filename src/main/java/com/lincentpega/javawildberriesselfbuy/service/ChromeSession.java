@@ -10,10 +10,13 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
+import org.telegram.telegrambots.meta.api.objects.Message;
 
 import java.io.File;
 import java.io.IOException;
@@ -159,7 +162,47 @@ public class ChromeSession {
         WebElement finallyChooseButton = driver.findElement(By.cssSelector(finallyChooseButtonSelector));
         finallyChooseButton.click();
 
-        state = SessionState.ADDRESS_SENT;
+        state = SessionState.ADDRESS_CHOSEN;
+    }
+
+    public void choosePaymentMethodAndPay(Message message) {
+        driver.get("https://www.wildberries.ru/lk/basket");
+
+        String changePaymentMethodButtonSelector = "#basketForm > " +
+                "div.basket-form__content.j-basket-form__content > " +
+                "div.basket-section__wrap >" +
+                " div.basket-form__basket-section.basket-section.basket-pay.j-b-basket-payment >" +
+                " div.basket-section__header-wrap > button";
+
+        WebElement changePaymentMethodButton = driver.findElement(By.cssSelector(changePaymentMethodButtonSelector));
+        changePaymentMethodButton.click();
+
+        String QRCodePaymentButtonSelector = "body > div.popup.popup-choose-pay.shown > div > div > div.methods-pay" +
+                " > ul > li.methods-pay__item.active > label";
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(QRCodePaymentButtonSelector)));
+
+        WebElement QRCodePaymentButton = driver.findElement(By.cssSelector(QRCodePaymentButtonSelector));
+        QRCodePaymentButton.click();
+
+        String chooseOptionButtonSelector = "body > div.popup.popup-choose-pay.shown > div > div" +
+                " > div.popup__btn > button.popup__btn-main";
+        WebElement chooseOptionButton = driver.findElement(By.cssSelector(chooseOptionButtonSelector));
+        chooseOptionButton.click();
+
+        String payButtonSelector = "#basketForm > div.basket-form__sidebar.sidebar > div > div > div " +
+                "> div.basket-order__b-btn.b-btn > button";
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(payButtonSelector)));
+        WebElement payButton = driver.findElement(By.cssSelector(payButtonSelector));
+        payButton.click();
+
+        String QRCodeSelector = "body > div.popup.i-popup-pay-qr.shown > div > " +
+                "div.qr-code__content > div.qr-code__value";
+        WebDriverWait QRWait = new WebDriverWait(driver, Duration.ofSeconds(25));
+        QRWait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(QRCodeSelector)));
+
+        state = SessionState.QR_CODE_APPEARED;
     }
 
     public String getCreationDateTime() {
@@ -237,7 +280,8 @@ public class ChromeSession {
         }
 
         WebElement addToCartButton = driver.findElement(
-                By.cssSelector("div > div.product-page__aside-container.j-price-block > div:nth-child(2) > div > button:nth-child(2)"));
+                By.cssSelector("div > div.product-page__aside-container.j-price-block > " +
+                        "div:nth-child(2) > div > button:nth-child(2)"));
 
         addToCartButton.click();
     }

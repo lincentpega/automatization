@@ -64,6 +64,8 @@ public class MessageHandler {
             return processState(message);
         } else if (messageText.equals("/close")) {
             return processClose(message);
+        } else if (messageText.equals("/pay") && userSession.getUpdatedState() == SessionState.ADDRESS_CHOSEN) {
+            return processPayment(message);
         } else {
             if (message.hasEntities()) {
                 var messageEntities = message.getEntities();
@@ -110,7 +112,23 @@ public class MessageHandler {
 
         ChromeSession userSession = idSessionHashMap.get(userId);
         userSession.chooseAddress(message.getText());
-        return new SendMessage(message.getChatId().toString(), "Выберите подходящий для доставки адрес цифрой по порядку сверху");
+        return new SendMessage(message.getChatId().toString(), "Адрес введён успешно, теперь можно оплатить /pay");
+    }
+
+    private BotApiMethod<?> processPayment(Message message) {
+        String userId = extractUserId(message);
+
+        ChromeSession userSession = idSessionHashMap.get(userId);
+        userSession.choosePaymentMethodAndPay(message);
+        try {
+            userSession.takeScreenshot(userId);
+            sendScreenshot(message);
+        } catch (IOException | TelegramFileUploadException e) {
+            log.error(e.getStackTrace());
+            return new SendMessage(message.getChatId().toString(),
+                    "Проблема с загрузкой скриншота, обратитесь к разработчику");
+        }
+        return new SendMessage(message.getChatId().toString(), "Оплатите заказ с помощью QR-кода со скриншота");
     }
 
     private BotApiMethod<?> processOffer(Message message) throws IllegalInputException {
@@ -182,11 +200,14 @@ public class MessageHandler {
                 userSession.takeScreenshot(userId);
                 sendScreenshot(message);
             } catch (IOException | TelegramFileUploadException e) {
-                return new SendMessage(message.getChatId().toString(), "Проблема с загрузкой скриншота, обратитесь к разработчику");
+                return new SendMessage(message.getChatId().toString(),
+                        "Проблема с загрузкой скриншота, обратитесь к разработчику");
             }
-            return new SendMessage(message.getChatId().toString(), "Введите капчу с картинки");
+            return new SendMessage(message.getChatId().toString(),
+                    "Введите капчу с картинки");
         } else {
-            return new SendMessage(message.getChatId().toString(), "Номер введён успешно, введите код подтверждения");
+            return new SendMessage(message.getChatId().toString(),
+                    "Номер введён успешно, введите код подтверждения");
         }
     }
 
@@ -201,7 +222,8 @@ public class MessageHandler {
                 userSession.takeScreenshot(userId);
                 sendScreenshot(message);
             } catch (IOException | TelegramFileUploadException e) {
-                return new SendMessage(message.getChatId().toString(), "Проблема с загрузкой скриншота, обратитесь к разработчику");
+                return new SendMessage(message.getChatId().toString(),
+                        "Проблема с загрузкой скриншота, обратитесь к разработчику");
             }
             return new SendMessage(message.getChatId().toString(),
                     "Введите капчу с картинки");
@@ -223,7 +245,8 @@ public class MessageHandler {
                 userSession.saveCookies();
                 return new SendMessage(message.getChatId().toString(), "Вы усешно вошли, можете продолжить");
             default:
-                log.warn("Inappropriate state, provided" + state + ",expected " + SessionState.WRONG_CODE_ENTERED + "or " + SessionState.AUTHENTICATED);
+                log.warn("Inappropriate state, provided" + state + ",expected " + SessionState.WRONG_CODE_ENTERED
+                        + "or " + SessionState.AUTHENTICATED);
                 throw new IllegalInputException("Неверное состояние, перезапустите сессию /close, потом /start");
         }
     }
@@ -256,7 +279,8 @@ public class MessageHandler {
 
     private void sendScreenshot(Message message) throws IOException, TelegramFileUploadException {
         String userId = message.getFrom().getId().toString();
-        ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(Path.of("src/main/resources/screenshots/screenshot" + userId + ".png"))) {
+        ByteArrayResource resource = new ByteArrayResource(
+                Files.readAllBytes(Path.of("src/main/resources/screenshots/screenshot" + userId + ".png"))) {
             @Override
             public String getFilename() {
                 return "screenshot" + userId + ".png";
