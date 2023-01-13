@@ -25,7 +25,8 @@ public class TelegramBot extends SpringWebhookBot {
 
     private final MessageHandler messageHandler;
 
-    public TelegramBot(SetWebhook setWebhook, TelegramConfigProperties telegramConfigProperties,
+    public TelegramBot(SetWebhook setWebhook,
+                       TelegramConfigProperties telegramConfigProperties,
                        MessageHandler messageHandler) {
         super(setWebhook);
         this.botPath = telegramConfigProperties.getBotPath();

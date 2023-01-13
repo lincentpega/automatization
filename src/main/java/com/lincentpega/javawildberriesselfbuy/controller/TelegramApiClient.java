@@ -24,7 +24,7 @@ public class TelegramApiClient {
         this.restTemplate = new RestTemplate();
     }
 
-    public void uploadCaptchaScreenshot(String chatId, ByteArrayResource value) throws TelegramFileUploadException {
+    public void uploadPhoto(String chatId, ByteArrayResource value) throws TelegramFileUploadException {
         LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
         map.add("document", value);
         map.add("chat_id", chatId);

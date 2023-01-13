@@ -1,12 +1,15 @@
 package com.lincentpega.javawildberriesselfbuy.service.handler;
 
 import com.lincentpega.javawildberriesselfbuy.constants.BotMessageEnum;
+import com.lincentpega.javawildberriesselfbuy.constants.HandlerState;
 import com.lincentpega.javawildberriesselfbuy.controller.TelegramApiClient;
 import com.lincentpega.javawildberriesselfbuy.exceptions.IllegalInputException;
 import com.lincentpega.javawildberriesselfbuy.exceptions.TelegramFileUploadException;
 import com.lincentpega.javawildberriesselfbuy.service.ChromeSession;
 import com.lincentpega.javawildberriesselfbuy.constants.SessionState;
 import lombok.extern.log4j.Log4j2;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Lookup;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
@@ -25,10 +28,14 @@ import java.util.regex.Pattern;
 @Component
 public class MessageHandler {
     private final HashMap<String, ChromeSession> idSessionHashMap;
+    private final HashMap<String, ChromeOptions> idOptionsHashMap;
     private final TelegramApiClient telegramApiClient;
+    private HandlerState handlerState;
 
     public MessageHandler(TelegramApiClient telegramApiClient) {
+        handlerState = HandlerState.DEFAULT;
         idSessionHashMap = new HashMap<>();
+        idOptionsHashMap = new HashMap<>();
         this.telegramApiClient = telegramApiClient;
     }
 
@@ -42,7 +49,29 @@ public class MessageHandler {
                 return processHelp(message);
 
             } else if (messageText.equals("/start")) {
-                return processStart(message);
+                if (idSessionHashMap.containsKey(userId)) {
+                    return new SendMessage(message.getChatId().toString(), BotMessageEnum.SESSION_ALREADY_EXISTS.getMessage());
+                }
+                handlerState = HandlerState.USER_AGENT;
+                idOptionsHashMap.put(userId, new ChromeOptions().addArguments("--disable-gpu", "--ignore-certificate-errors",
+                        "--disable-extensions", "--no-sandbox", "--disable-dev-shm-usage", "--headless"));
+                return new SendMessage(message.getChatId().toString(), "Введите значение User-Agent или /default");
+
+            } else if (handlerState == HandlerState.USER_AGENT) {
+                handlerState = HandlerState.PROXY;
+                processUserAgent(message);
+                return new SendMessage(message.getChatId().toString(), "Указанная версия браузера установлена. Введите значение прокси-сервера или /default");
+
+            } else if (handlerState == HandlerState.PROXY) {
+                handlerState = HandlerState.RESOLUTION;
+                processProxy(message);
+                return new SendMessage(message.getChatId().toString(), "Прокси-сервер установлен. Введите разрешение в формате MxN или /default\n");
+
+            } else if (handlerState == HandlerState.RESOLUTION) {
+                handlerState = HandlerState.DEFAULT;
+                processResolution(message);
+                createSession(userId);
+                return new SendMessage(message.getChatId().toString(), "Разрешение установлено.\n" + BotMessageEnum.SESSION_CREATED.getMessage());
 
             } else if (idSessionHashMap.containsKey(userId)) {
                 return handleSessionMessage(message);
@@ -53,6 +82,45 @@ public class MessageHandler {
         } else {
             throw new IllegalInputException("Сообщение пусто");
         }
+    }
+
+    private void processResolution(Message message) {
+        String userId = message.getFrom().getId().toString();
+        ChromeOptions options = idOptionsHashMap.get(userId);
+
+        if (message.getText().equals("/default")) {
+            options.addArguments("--window-size=1920,1080");
+        } else {
+            String[] resolution = message.getText().strip().split("x");
+            String width = resolution[0];
+            String height = resolution[1];
+            options.addArguments("--window-size=" + width + "," + height);
+        }
+
+    }
+
+    private void processProxy(Message message) {
+        String userId = message.getFrom().getId().toString();
+        ChromeOptions options = idOptionsHashMap.get(userId);
+
+        if (!message.getText().equals("/default")) {
+            String proxyServer = message.getText();
+            options.addArguments("--proxy-server=", proxyServer); // TODO: add proxy validation
+
+        }
+    }
+
+    private void processUserAgent(Message message) {
+        String userId = message.getFrom().getId().toString();
+        ChromeOptions options = idOptionsHashMap.get(userId);
+
+        if (message.getText().equals("/default")) {
+            options.addArguments("user-agent=" + "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                    "(KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36");
+        } else {
+            options.addArguments("user-agent=" + message.getText().strip());
+        }
+
     }
 
     private BotApiMethod<?> handleSessionMessage(Message message) throws IllegalInputException {
@@ -75,11 +143,12 @@ public class MessageHandler {
                     return processOffer(message);
                 }
             }
-            return handlePlainMessage(message);
+            return handlePlainSessionMessage(message);
         }
     }
 
-    private BotApiMethod<?> handlePlainMessage(Message message) throws IllegalInputException {
+    // FIXME: should this session state validation be on session side? does inline validation corrupts SRP?
+    private BotApiMethod<?> handlePlainSessionMessage(Message message) throws IllegalInputException {
         String userId = extractUserId(message);
 
         ChromeSession userSession = idSessionHashMap.get(userId);
@@ -112,14 +181,19 @@ public class MessageHandler {
 
         ChromeSession userSession = idSessionHashMap.get(userId);
         userSession.chooseAddress(message.getText());
-        return new SendMessage(message.getChatId().toString(), "Адрес введён успешно, теперь можно оплатить /pay");
+
+        // TODO: add session state validation on session side
+        String address = userSession.getAddress();
+
+        return new SendMessage(message.getChatId().toString(),
+                "Адрес пункта выдачи: " + address + "\nТеперь можно оплатить /pay");
     }
 
     private BotApiMethod<?> processPayment(Message message) {
         String userId = extractUserId(message);
 
         ChromeSession userSession = idSessionHashMap.get(userId);
-        userSession.choosePaymentMethodAndPay(message);
+        userSession.choosePaymentMethodAndPay();
         try {
             userSession.takeScreenshot(userId);
             sendScreenshot(message);
@@ -152,20 +226,14 @@ public class MessageHandler {
         return new SendMessage(message.getChatId().toString(), BotMessageEnum.HELP_MESSAGE.getMessage());
     }
 
-    private BotApiMethod<?> processStart(Message message) {
-        String userId = extractUserId(message);
-
-        if (idSessionHashMap.containsKey(userId)) {
-            return new SendMessage(message.getChatId().toString(), BotMessageEnum.SESSION_ALREADY_EXISTS.getMessage());
-        }
-
+    private void createSession(String userId) {
+        ChromeOptions chromeOptions = idOptionsHashMap.get(userId);
         ChromeSession chromeSession = getChromeSession();
+        chromeSession.setDriver(new ChromeDriver(chromeOptions));
+        log.info(chromeOptions.asMap());
         chromeSession.openWebsite();
 
         idSessionHashMap.put(userId, chromeSession);
-
-        return new SendMessage(message.getChatId().toString(), BotMessageEnum.SESSION_CREATED.getMessage());
-
     }
 
     private BotApiMethod<?> processState(Message message) {
@@ -269,24 +337,26 @@ public class MessageHandler {
     private boolean isCode(Message message) {
         String messageText = message.getText();
         messageText = messageText.trim();
-        return Pattern.matches("\\d{4}", messageText);
+        return Pattern.matches("\\d{6}", messageText);
     }
 
     private boolean isGoodUrl(String url) {
         url = url.trim();
-        return Pattern.matches("https://www.wildberries.ru/catalog/.*", url);
+        return Pattern.matches(".*wildberries.ru/catalog/.*", url);
     }
 
     private void sendScreenshot(Message message) throws IOException, TelegramFileUploadException {
         String userId = message.getFrom().getId().toString();
+        Path screenshotPath = Path.of("src/main/resources/screenshots/screenshot" + userId + ".png");
         ByteArrayResource resource = new ByteArrayResource(
-                Files.readAllBytes(Path.of("src/main/resources/screenshots/screenshot" + userId + ".png"))) {
+                Files.readAllBytes(screenshotPath)) {
             @Override
             public String getFilename() {
                 return "screenshot" + userId + ".png";
             }
         };
-        telegramApiClient.uploadCaptchaScreenshot(message.getChatId().toString(), resource);
+        telegramApiClient.uploadPhoto(message.getChatId().toString(), resource);
+        Files.deleteIfExists(screenshotPath);
     }
 
     private String extractUserId(Message message) {
