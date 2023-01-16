@@ -13,7 +13,7 @@ services:
       REDIS_HOST: cache
       REDIS_PORT: 6379
       APP_PORT: 8000
-      BOT_PATH: https://8675-89-109-45-5.eu.ngrok.io
+      BOT_PATH: https://f0cb-89-22-237-35.eu.ngrok.io
     depends_on:
       - cache
 

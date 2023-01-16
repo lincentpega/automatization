@@ -28,6 +28,7 @@ import static com.lincentpega.javawildberriesselfbuy.constants.SelectorEnum.*;
 @Scope("prototype")
 @Log4j2
 public class ChromeSession { // TODO: change to POJO
+    private int timeout;
     private SessionState state;
     private String number;
     private WebDriver driver;
@@ -65,7 +66,7 @@ public class ChromeSession { // TODO: change to POJO
     }
 
     public void enterNumber(String number) {
-        WebElement numberInputFormBlock = waitedFindVisible(10, INPUT_FORM_BLOCK.getMessage());
+        WebElement numberInputFormBlock = waitedFindVisible(timeout, INPUT_FORM_BLOCK.getMessage());
         WebElement numberInputField = numberInputFormBlock.findElement(By.cssSelector(NUMBER_INPUT_FIELD.getMessage()));
         numberInputField.sendKeys(number);
 
@@ -81,17 +82,17 @@ public class ChromeSession { // TODO: change to POJO
     }
 
     public void enterCaptcha(String captchaCode) {
-        WebElement captchaInputField = waitedFindVisible(10, CAPTCHA_INPUT_FIELD.getMessage());
+        WebElement captchaInputField = waitedFindVisible(timeout, CAPTCHA_INPUT_FIELD.getMessage());
         captchaInputField.sendKeys(captchaCode);
 
-        WebElement button = waitedFindClickable(10, CAPTCHA_SUBMIT_BUTTON.getMessage());
+        WebElement button = waitedFindClickable(timeout, CAPTCHA_SUBMIT_BUTTON.getMessage());
         button.click();
 
         state = SessionState.CAPTCHA_ENTERED;
     }
 
     public void enterCode(String code) {
-        WebElement codeInputFormBlock = waitedFindVisible(10, INPUT_FORM_BLOCK.getMessage());
+        WebElement codeInputFormBlock = waitedFindVisible(timeout, INPUT_FORM_BLOCK.getMessage());
         WebElement codeInputField = codeInputFormBlock.findElement(
                 By.cssSelector(CODE_INPUT_FIELD.getMessage())
         );
@@ -119,14 +120,14 @@ public class ChromeSession { // TODO: change to POJO
             throw new RuntimeException(e);
         }
 
-        WebElement firstAddressButton = waitedFindClickable(10, FIRST_ADDRESS_BUTTON.getMessage());
+        WebElement firstAddressButton = waitedFindClickable(timeout, FIRST_ADDRESS_BUTTON.getMessage());
         firstAddressButton.click();
 
 
-        WebElement chooseAddressOnMapButton = waitedFindClickable(10, CHOOSE_ADDRESS_ON_MAP_BUTTON.getMessage());
+        WebElement chooseAddressOnMapButton = waitedFindClickable(timeout, CHOOSE_ADDRESS_ON_MAP_BUTTON.getMessage());
         chooseAddressOnMapButton.click();
 
-        WebElement finallyChooseButton = waitedFindClickable(10, FINALLY_CHOOSE_ADDRESS_BUTTON.getMessage());
+        WebElement finallyChooseButton = waitedFindClickable(timeout, FINALLY_CHOOSE_ADDRESS_BUTTON.getMessage());
         finallyChooseButton.click();
 
         state = SessionState.ADDRESS_CHOSEN;
@@ -135,19 +136,19 @@ public class ChromeSession { // TODO: change to POJO
     public void choosePaymentMethodAndPay() {
         driver.get("https://www.wildberries.ru/lk/basket");
 
-        WebElement changePaymentMethodButton = waitedFindClickable(10, CHOOSE_PAYMENT_METHOD_BUTTON.getMessage());
+        WebElement changePaymentMethodButton = waitedFindClickable(timeout, CHOOSE_PAYMENT_METHOD_BUTTON.getMessage());
         changePaymentMethodButton.click();
 
-        WebElement QRCodePaymentButton = waitedFindClickable(10, QR_PAYMENT_BUTTON.getMessage());
+        WebElement QRCodePaymentButton = waitedFindClickable(timeout, QR_PAYMENT_BUTTON.getMessage());
         QRCodePaymentButton.click();
 
-        WebElement chooseOptionButton = waitedFindClickable(10, CHOOSE_OPTION_BUTTON.getMessage());
+        WebElement chooseOptionButton = waitedFindClickable(timeout, CHOOSE_OPTION_BUTTON.getMessage());
         chooseOptionButton.click();
 
-        WebElement payButton = waitedFindClickable(10, PAY_BUTTON_SELECTOR.getMessage());
+        WebElement payButton = waitedFindClickable(timeout, PAY_BUTTON_SELECTOR.getMessage());
         payButton.click();
 
-        waitedFindVisible(25, QR_CODE.getMessage());
+        waitedFindVisible(40, QR_CODE.getMessage());
 
         state = SessionState.QR_CODE_APPEARED;
     }
@@ -159,7 +160,7 @@ public class ChromeSession { // TODO: change to POJO
             throw new RuntimeException(e);
         }
 
-        WebElement issuePointAddress = waitedFindVisible(10, ISSUE_POINT_ADDRESS.getMessage());
+        WebElement issuePointAddress = waitedFindVisible(timeout, ISSUE_POINT_ADDRESS.getMessage());
         return issuePointAddress.getText();
     }
 
@@ -230,32 +231,32 @@ public class ChromeSession { // TODO: change to POJO
 
     private void addToCart() {
         if (isGoodHaveSizes()) {
-            WebElement sizeButton = waitedFindClickable(10, SIZE_BUTTON.getMessage());
+            WebElement sizeButton = waitedFindClickable(timeout, SIZE_BUTTON.getMessage());
             sizeButton.click();
         }
 
-        WebElement addToCartButton = waitedFindClickable(10, ADD_TO_CART_BUTTON.getMessage());
+        WebElement addToCartButton = waitedFindClickable(timeout, ADD_TO_CART_BUTTON.getMessage());
         addToCartButton.click();
     }
 
     private void toAddressChoice() {
 
         if (isNoExistingAddress()) {
-            WebElement addressChooseLink = waitedFindClickable(10, ADDRESS_CHOOSE_LINK.getMessage());
+            WebElement addressChooseLink = waitedFindClickable(timeout, ADDRESS_CHOOSE_LINK.getMessage());
             addressChooseLink.click();
 
         } else {
-            WebElement changeAddressButton = waitedFindClickable(10, CHANGE_ADDRESS_BUTTON.getMessage());
+            WebElement changeAddressButton = waitedFindClickable(timeout, CHANGE_ADDRESS_BUTTON.getMessage());
             changeAddressButton.click();
 
-            waitedFindClickable(10, ADDRESS_HISTORY_BUTTON.getMessage());
+            waitedFindClickable(timeout, ADDRESS_HISTORY_BUTTON.getMessage());
 
             while (true) {
                 try {
-                    WebElement historyButton = waitedFindClickable(1, ADDRESS_HISTORY_BUTTON.getMessage());
+                    WebElement historyButton = waitedFindClickable(2, ADDRESS_HISTORY_BUTTON.getMessage());
                     historyButton.click();
 
-                    WebElement deleteButton = waitedFindClickable(10, ADDRESS_DELETE_BUTTON.getMessage());
+                    WebElement deleteButton = waitedFindClickable(timeout, ADDRESS_DELETE_BUTTON.getMessage());
                     deleteButton.click();
 
                 } catch (NoSuchElementException | TimeoutException e) {
@@ -263,19 +264,19 @@ public class ChromeSession { // TODO: change to POJO
                 }
             }
         }
-        WebElement addressChooseButton = waitedFindClickable(10, ADDRESS_CHOOSE_BUTTON.getMessage());
+        WebElement addressChooseButton = waitedFindClickable(timeout, ADDRESS_CHOOSE_BUTTON.getMessage());
         addressChooseButton.click();
     }
 
     private void inputAddress(String address) {
-        WebElement inputField = waitedFindVisible(10, ADDRESS_INPUT_FIELD.getMessage());
+        WebElement inputField = waitedFindVisible(timeout, ADDRESS_INPUT_FIELD.getMessage());
         inputField.sendKeys(address);
 
-        WebElement findButton = waitedFindClickable(10, FIND_BUTTON.getMessage());
+        WebElement findButton = waitedFindClickable(timeout, FIND_BUTTON.getMessage());
         findButton.click();
 
         if (isOptionsSuggested()) {
-            WebElement firstSuggestedOption = waitedFindClickable(10, FIRST_ADDRESS_OPTION.getMessage());
+            WebElement firstSuggestedOption = waitedFindClickable(timeout, FIRST_ADDRESS_OPTION.getMessage());
             firstSuggestedOption.click();
         }
 
