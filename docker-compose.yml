@@ -9,22 +9,32 @@ services:
       target: production
     ports:
       - "8000:8000"
-    environment:
-      REDIS_HOST: cache
-      REDIS_PORT: 6379
-      APP_PORT: 8000
-      BOT_PATH: https://f0cb-89-22-237-35.eu.ngrok.io
+    env_file:
+      - .env
     depends_on:
-      - cache
+      - db
 
-  cache:
-    image: redis:7.0.7-alpine
+#  cache:
+#    image: redis:7.0.7-alpine
+#    restart: always
+#    ports:
+#      - "6379:6379"
+#    volumes:
+#      - cache:/data
+
+  db:
+    image: postgres:15.1-alpine
     restart: always
+    environment:
+      - POSTGRES_PASSWORD=postgres
     ports:
-      - "6379:6379"
+      - "5432:5432"
     volumes:
-      - cache:/data
+      - pgdata:/var/lib/postgresql/data
+
+#volumes:
+#  cache:
+#    driver: local
 
 volumes:
-  cache:
-    driver: local
+  pgdata:
