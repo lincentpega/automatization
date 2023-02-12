@@ -2,14 +2,15 @@ package com.lincentpega.javawildberriesselfbuy.infrastructure.adapter.out;
 
 import com.lincentpega.javawildberriesselfbuy.application.port.out.UserRepository;
 import com.lincentpega.javawildberriesselfbuy.domain.User;
-import com.lincentpega.javawildberriesselfbuy.infrastructure.UserToUserEntityMapper;
+import com.lincentpega.javawildberriesselfbuy.infrastructure.mapper.UserToUserEntityMapper;
+import com.lincentpega.javawildberriesselfbuy.infrastructure.adapter.out.entity.UserEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 @Component
 public class JpaUserRepository implements UserRepository {
-    private JpaUserEntityRepository jpaUserEntityRepository;
+    private final JpaUserEntityRepository jpaUserEntityRepository;
     private final UserToUserEntityMapper userToUserEntityMapper;
 
     public JpaUserRepository(JpaUserEntityRepository jpaUserEntityRepository,

@@ -3,7 +3,7 @@ server:
 
 telegram:
   bot-token: 5607566405:AAHWw1qt8Tn3dnA-09zAprhSvYjZlbbfv2w
-  bot-path: https://a46f-95-37-3-16.eu.ngrok.io
+  bot-path: https://0bc9-37-252-92-39.eu.ngrok.io
   bot-username: wildberries_automatization_bot
   bot-url: https://api.telegram.org/
 
@@ -19,7 +19,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
 
   liquibase:
     change-log: classpath:/db/changelog/changelog.xml

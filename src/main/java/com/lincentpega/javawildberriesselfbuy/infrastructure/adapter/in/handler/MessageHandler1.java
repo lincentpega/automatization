@@ -82,44 +82,8 @@
 //        }
 //    }
 //
-//    private void processResolution(Message message) {
-//        String userId = message.getFrom().getId().toString();
-//        ChromeOptions options = idOptionsHashMap.get(userId);
 //
-//        if (message.getText().equals("/default")) {
-//            options.addArguments("--window-size=1920,1080");
-//        } else {
-//            String[] resolution = message.getText().strip().split("x");
-//            String width = resolution[0];
-//            String height = resolution[1];
-//            options.addArguments("--window-size=" + width + "," + height);
-//        }
 //
-//    }
-//
-//    private void processProxy(Message message) {
-//        String userId = message.getFrom().getId().toString();
-//        ChromeOptions options = idOptionsHashMap.get(userId);
-//
-//        if (!message.getText().equals("/default")) {
-//            String proxyServer = message.getText();
-//            options.addArguments("--proxy-server=", proxyServer); // TODO: add proxy validation
-//
-//        }
-//    }
-//
-//    private void processUserAgent(Message message) {
-//        String userId = message.getFrom().getId().toString();
-//        ChromeOptions options = idOptionsHashMap.get(userId);
-//
-//        if (message.getText().equals("/default")) {
-//            options.addArguments("user-agent=" + "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-//                    "(KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36");
-//        } else {
-//            options.addArguments("user-agent=" + message.getText().strip());
-//        }
-//
-//    }
 //
 //    private BotApiMethod<?> handleSessionMessage(Message message) throws IllegalInputException {
 //        String messageText = message.getText();
