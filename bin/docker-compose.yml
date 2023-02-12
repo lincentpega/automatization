@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  bot:
+    image: imkrasnyukov/java-wildberries-self-buy
+    restart: always
+    build:
+      context: .
+      target: production
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_HOST: cache
+      REDIS_PORT: 6379
+      APP_PORT: 8000
+      BOT_PATH: https://8675-89-109-45-5.eu.ngrok.io
+    depends_on:
+      - cache
+
+  cache:
+    image: redis:7.0.7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache:/data
+
+volumes:
+  cache:
+    driver: local

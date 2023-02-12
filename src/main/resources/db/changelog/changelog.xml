@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1675760536758-1" author="imkrasnyukov (generated)">
+        <createSequence incrementBy="1" sequenceName="hibernate_sequence" startValue="1"/>
+    </changeSet>
+    <changeSet id="1675760536758-2" author="imkrasnyukov (generated)">
+        <createTable tableName="cookie_entity">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_cookieentity"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="value" type="VARCHAR(255)"/>
+            <column name="path" type="VARCHAR(255)"/>
+            <column name="domain" type="VARCHAR(255)"/>
+            <column name="expiry" type="DATETIME"/>
+            <column name="is_secure" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_http_only" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="same_site" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1675760536758-3" author="imkrasnyukov (generated)">
+        <createTable tableName="session_cookies_entity">
+            <column name="number" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sessioncookiesentity"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1675760536758-4" author="imkrasnyukov (generated)">
+        <createTable tableName="session_cookies_entity_cookie">
+            <column name="session_cookies_entity_number" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sessioncookiesentity_cookie"/>
+            </column>
+            <column name="cookie_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sessioncookiesentity_cookie"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1675760536758-5" author="imkrasnyukov (generated)">
+        <createTable tableName="session_params_entity">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sessionparamsentity"/>
+            </column>
+            <column name="proxy" type="VARCHAR(255)"/>
+            <column name="user_agent" type="VARCHAR(255)"/>
+            <column name="resolution" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1675760536758-6" author="imkrasnyukov (generated)">
+        <createTable tableName="user_entity">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_userentity"/>
+            </column>
+            <column name="session_params_id" type="BIGINT"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1675760536758-7" author="imkrasnyukov (generated)">
+        <createTable tableName="user_entity_session_cookies">
+            <column name="user_entity_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="session_cookies_number" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1675760536758-8" author="imkrasnyukov (generated)">
+        <addUniqueConstraint columnNames="cookie_id" constraintName="uc_session_cookies_entity_cookie_cookie"
+                             tableName="session_cookies_entity_cookie"/>
+    </changeSet>
+    <changeSet id="1675760536758-9" author="imkrasnyukov (generated)">
+        <addUniqueConstraint columnNames="session_cookies_number"
+                             constraintName="uc_user_entity_session_cookies_sessioncookies_number"
+                             tableName="user_entity_session_cookies"/>
+    </changeSet>
+    <changeSet id="1675760536758-10" author="imkrasnyukov (generated)">
+        <addForeignKeyConstraint baseColumnNames="session_params_id" baseTableName="user_entity"
+                                 constraintName="FK_USERENTITY_ON_SESSIONPARAMS" referencedColumnNames="id"
+                                 referencedTableName="session_params_entity"/>
+    </changeSet>
+    <changeSet id="1675760536758-11" author="imkrasnyukov (generated)">
+        <addForeignKeyConstraint baseColumnNames="cookie_id" baseTableName="session_cookies_entity_cookie"
+                                 constraintName="fk_sescooentcoo_on_cookie_entity" referencedColumnNames="id"
+                                 referencedTableName="cookie_entity"/>
+    </changeSet>
+    <changeSet id="1675760536758-12" author="imkrasnyukov (generated)">
+        <addForeignKeyConstraint baseColumnNames="session_cookies_entity_number"
+                                 baseTableName="session_cookies_entity_cookie"
+                                 constraintName="fk_sescooentcoo_on_session_cookies_entity"
+                                 referencedColumnNames="number" referencedTableName="session_cookies_entity"/>
+    </changeSet>
+    <changeSet id="1675760536758-13" author="imkrasnyukov (generated)">
+        <addForeignKeyConstraint baseColumnNames="session_cookies_number" baseTableName="user_entity_session_cookies"
+                                 constraintName="fk_useentsescoo_on_session_cookies_entity"
+                                 referencedColumnNames="number" referencedTableName="session_cookies_entity"/>
+    </changeSet>
+    <changeSet id="1675760536758-14" author="imkrasnyukov (generated)">
+        <addForeignKeyConstraint baseColumnNames="user_entity_id" baseTableName="user_entity_session_cookies"
+                                 constraintName="fk_useentsescoo_on_user_entity" referencedColumnNames="id"
+                                 referencedTableName="user_entity"/>
+    </changeSet>
+
+</databaseChangeLog>

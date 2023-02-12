@@ -1,0 +1,28 @@
+server:
+  port: 8000
+
+telegram:
+  bot-token: 5607566405:AAHWw1qt8Tn3dnA-09zAprhSvYjZlbbfv2w
+  bot-path: https://0bc9-37-252-92-39.eu.ngrok.io
+  bot-username: wildberries_automatization_bot
+  bot-url: https://api.telegram.org/
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+
+  liquibase:
+    change-log: classpath:/db/changelog/changelog.xml
+    password: postgres
+    url: jdbc:postgresql://localhost:5432/postgres
+    user: postgres
