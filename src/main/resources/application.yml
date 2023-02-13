@@ -2,7 +2,7 @@ server:
   port: 8000
 
 telegram:
-  bot-token: 5607566405:AAHWw1qt8Tn3dnA-09zAprhSvYjZlbbfv2w
+  bot-token: ${TELEGRAM_TOKEN}
   bot-path: https://0bc9-37-252-92-39.eu.ngrok.io
   bot-username: wildberries_automatization_bot
   bot-url: https://api.telegram.org/
